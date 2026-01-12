@@ -1,7 +1,0 @@
-chmod +x proxvn-linux-client
-
-./proxvn-linux-client --help
-
-./proxvn-linux-client [OPS]
-
-vd: ./proxvn-linux-client --proto [http,tcp,udp] --port [80,443,3389,22,..] --cert-pin 5d21642f9c2ac2aef414ecb27b54cdb5d53cb6d554bbf965de19d2c8652f47c6 --ui=true/false
