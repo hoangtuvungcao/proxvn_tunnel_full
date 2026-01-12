@@ -103,24 +103,25 @@ type rateLimiter struct {
 }
 
 type clientSession struct {
-	server     *server // Reference to parent server for HTTP response handling
-	conn       net.Conn
-	enc        *jsonWriter
-	dec        *jsonReader
-	clientID   string
-	key        string
-	target     string
-	protocol   string
-	publicPort int
-	subdomain  string // For HTTP tunneling
-	lastSeen   time.Time
-	closeOnce  sync.Once
-	done       chan struct{}
-	mu         sync.Mutex
-	bytesUp    uint64
-	bytesDown  uint64
-	remoteIP   string
-	udpSecret  []byte // Key for UDP encryption
+	server         *server // Reference to parent server for HTTP response handling
+	conn           net.Conn
+	enc            *jsonWriter
+	dec            *jsonReader
+	clientID       string
+	key            string
+	target         string
+	protocol       string
+	publicPort     int
+	subdomain      string // For HTTP tunneling
+	lastSeen       time.Time
+	closeOnce      sync.Once
+	done           chan struct{}
+	mu             sync.Mutex
+	bytesUp        uint64
+	bytesDown      uint64
+	remoteIP       string
+	udpSecret      []byte // Key for UDP encryption
+	publicListener net.Listener
 }
 
 type udpServerSession struct {
@@ -794,7 +795,7 @@ func (s *server) handleConnection(conn net.Conn) {
 			}
 			session.conn.Close()
 		}
-		s.removeClient(session.clientID)
+		s.removeClient(session)
 		return
 	}
 
@@ -953,6 +954,20 @@ func (s *server) startPublicListener(session *clientSession) {
 		log.Printf("[server] failed to listen on public port %d: %v", session.publicPort, err)
 		return
 	}
+
+	// Store listener safely
+	session.mu.Lock()
+	select {
+	case <-session.done:
+		// Session closed while we were setting up
+		session.mu.Unlock()
+		listener.Close()
+		return
+	default:
+		session.publicListener = listener
+	}
+	session.mu.Unlock()
+
 	defer listener.Close()
 
 	log.Printf("[server] public listener started on port %d for client %s", session.publicPort, session.clientID)
@@ -960,8 +975,17 @@ func (s *server) startPublicListener(session *clientSession) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) || strings.Contains(err.Error(), "use of closed network connection") {
+				return
+			}
+
 			log.Printf("[server] public listener error: %v", err)
-			continue
+
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			return
 		}
 
 		go s.handlePublicConnection(session, conn)
@@ -1362,11 +1386,11 @@ func (s *server) addClient(session *clientSession) {
 	s.clientsMu.Unlock()
 }
 
-func (s *server) removeClient(clientID string) {
+func (s *server) removeClient(session *clientSession) {
 	s.clientsMu.Lock()
-	session, exists := s.clients[clientID]
-	if exists {
-		delete(s.clients, clientID)
+	existingSession, exists := s.clients[session.clientID]
+	if exists && existingSession == session {
+		delete(s.clients, session.clientID)
 
 		// Release port back to pool
 		if session.publicPort > 0 {
@@ -1375,11 +1399,12 @@ func (s *server) removeClient(clientID string) {
 	}
 	s.clientsMu.Unlock()
 
-	if session != nil {
-		// Unregister from HTTP proxy if applicable
+	// Always ensure this specific session is closed
+	// Unregister from HTTP proxy if applicable
+	if existingSession == session {
 		s.unregisterHTTPClient(session)
-		session.Close()
 	}
+	session.Close()
 }
 
 // Send dashboard update with real-time tunnel info and metrics
@@ -1490,6 +1515,12 @@ func (session *clientSession) Close() {
 		if session.conn != nil {
 			session.conn.Close()
 		}
+
+		session.mu.Lock()
+		if session.publicListener != nil {
+			session.publicListener.Close()
+		}
+		session.mu.Unlock()
 	})
 }
 

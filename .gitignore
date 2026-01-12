@@ -58,3 +58,5 @@ client/proxvn-*
 server-windows/*.exe
 server-linux/svproxvn
 server-linux/svproxvn-*
+
+bin/
