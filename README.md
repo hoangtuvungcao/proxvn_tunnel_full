@@ -91,10 +91,7 @@ proxvn --proto udp 19132
 
 ### Windows:
 ```powershell
-# 1. Download
-Invoke-WebRequest -Uri "https://vutrungocrong.fun/downloads/proxvn.exe" -OutFile "proxvn.exe"
-
-# 2. Chạy (ví dụ: web server port 3000)
+# 1. Chạy (ví dụ: web server port 3000)
 .\proxvn.exe --proto http 3000
 
 # ✅ Nhận ngay URL: https://xyz789.vutrungocrong.fun
@@ -102,11 +99,7 @@ Invoke-WebRequest -Uri "https://vutrungocrong.fun/downloads/proxvn.exe" -OutFile
 
 ### Linux/macOS:
 ```bash
-# 1. Download
-wget https://vutrungocrong.fun/downloads/proxvn-linux-client
-chmod +x proxvn-linux-client
-
-# 2. Chạy
+# 1. Chạy
 ./proxvn-linux-client --proto http 8080
 
 # ✅ Done!
@@ -114,8 +107,7 @@ chmod +x proxvn-linux-client
 
 ### 🎬 Hoặc Dùng Script (Windows):
 ```powershell
-cd scripts
-.\run_client.bat
+.\run_windows.bat
 # → Nhập Host, Port, Protocol → Done!
 ```
 
@@ -127,18 +119,17 @@ cd scripts
 
 | Platform | Download | SHA256 |
 |----------|----------|--------|
-| **Windows** | [proxvn.exe](https://vutrungocrong.fun/downloads/proxvn.exe) | `e3b0c44...` |
-| **Linux** | [proxvn-linux-client](https://vutrungocrong.fun/downloads/proxvn-linux-client) | `d5b0f72...` |
-| **macOS (M1)** | [proxvn-mac-m1](https://vutrungocrong.fun/downloads/proxvn-mac-m1) | `a7c9e12...` |
-| **macOS (Intel)** | [proxvn-mac-intel](https://vutrungocrong.fun/downloads/proxvn-mac-intel) | `b8d1f93...` |
-| **Android (Termux)** | [proxvn-android](https://vutrungocrong.fun/downloads/proxvn-android) | `c9e2a84...` |
+| **Windows** | [proxvn.exe](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/windows.zip) | `sha256:53ecbae0afc41f076218010bf462929c8e267f7f60b3855617eedf7475663014` |
+| **Linux** | [proxvn-linux-client](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/linux.zip) | `sha256:7dff6cbfecf9b63255838dba109d79cfeea9b20aff5c24ab2841f3b60daf0c95` |
+| **macOS (M1)** | [proxvn-mac-m1](sha256:dbd23b7bb888b925797efd3151684b0164cbb785ed2d1f922cd7f5a69fd113c4) | `sha256:dbd23b7bb888b925797efd3151684b0164cbb785ed2d1f922cd7f5a69fd113c4` |
+| **macOS (Intel)** | [proxvn-mac-intel](sha256:6a6bb45a5447fa6f9d6aa16f2f8b102d40b35ad6cdfcbba2f416f1a3bd2eadac) | `sha256:6a6bb45a5447fa6f9d6aa16f2f8b102d40b35ad6cdfcbba2f416f1a3bd2eadac` |
+| **Android (Termux)** | [proxvn-android](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/android.zip) | `sha256:888235024237ac8c7b5f87430205d83ad769eaa8dfb5866d3206595c2ae93acb` |
 
 ### 🏗️ Build Từ Source
 ```bash
 git clone https://github.com/hoangtuvungcao/proxvn_tunnel
 cd proxvn_tunnel
 cd scripts && ./build.bat  # Windows
-cd scripts && ./build.sh   # Linux/macOS
 ```
 
 ---
