@@ -1,0 +1,32 @@
+# Binaries
+*.exe~
+*-test.exe
+
+# Certificates
+*.crt
+*.key
+*.pem
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+temp/
+tmp/
+
+# Build artifacts
+bin/*.zip

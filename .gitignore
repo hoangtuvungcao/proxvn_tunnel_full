@@ -9,11 +9,7 @@ svproxvn
 svproxvn-*
 
 # Build directories
-/bin/
-/build/
-/dist/
-/out/
-/target/
+
 
 # Go specific
 *.test

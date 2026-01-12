@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxVN - Tunnel Anywhere, Anytime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">🚀</span>
+                <span class="logo-text">ProxVN</span>
+            </div>
+            <nav>
+                <a href="#features">Features</a>
+                <a href="#download">Download</a>
+                <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank">GitHub</a>
+                <a href="/dashboard/" class="btn-dashboard">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="holographic-text">Expose Your Local Server<br/>To The Internet</h1>
+                <p class="hero-subtitle">Fast, secure, and reliable tunnel service. Perfect for development, testing, and production.</p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">99.9%</span>
+                        <span class="stat-label">Uptime</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">&lt;50ms</span>
+                        <span class="stat-label">Latency</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">Free</span>
+                        <span class="stat-label">Forever</span>
+                    </div>
+                </div>
+                <div class="hero-cta">
+                    <a href="#download" class="btn-primary">Get Started</a>
+                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" class="btn-secondary">View on GitHub</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose ProxVN?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure & Encrypted</h3>
+                    <p>All connections are encrypted with TLS. Your data is safe with certificate pinning.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Optimized for low latency and high throughput. Perfect for gaming and real-time apps.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>HTTP Tunneling</h3>
+                    <p>Get a public HTTPS URL with custom subdomain. Perfect for webhooks and APIs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Gaming Ready</h3>
+                    <p>Tunnel Minecraft PE, Terraria, and other games. Play with friends worldwide.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💻</div>
+                    <h3>Cross-Platform</h3>
+                    <p>Works on Windows, Linux, macOS, and Android. One binary, all platforms.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Easy to Use</h3>
+                    <p>Single command to start. No configuration needed. Just run and go.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <h2 class="section-title">Download Now</h2>
+            <div class="download-grid">
+                <div class="download-card">
+                    <div class="download-icon">🪟</div>
+                    <h3>Windows</h3>
+                    <p>Windows 10/11 (64-bit)</p>
+                    <a href="/downloads/proxvn.exe" class="btn-download">Download Client</a>
+                    <a href="/downloads/svproxvn.exe" class="btn-download-secondary">Download Server</a>
+                </div>
+                <div class="download-card">
+                    <div class="download-icon">🐧</div>
+                    <h3>Linux</h3>
+                    <p>Ubuntu, Debian, CentOS, etc.</p>
+                    <a href="/downloads/proxvn-linux-client" class="btn-download">Download Client</a>
+                    <a href="/downloads/svproxvn-linux" class="btn-download-secondary">Download Server</a>
+                </div>
+                <div class="download-card">
+                    <div class="download-icon">🍎</div>
+                    <h3>macOS</h3>
+                    <p>Intel & Apple Silicon</p>
+                    <a href="/downloads/proxvn-mac-intel" class="btn-download">Intel</a>
+                    <a href="/downloads/proxvn-mac-m1" class="btn-download-secondary">Apple Silicon</a>
+                </div>
+                <div class="download-card">
+                    <div class="download-icon">🤖</div>
+                    <h3>Android</h3>
+                    <p>Termux required</p>
+                    <a href="/downloads/proxvn-android" class="btn-download">Download</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="quickstart">
+        <div class="container">
+            <h2 class="section-title">Quick Start</h2>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>Client Usage</span>
+                    <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
+                </div>
+                <pre><code id="quickstart-code"># Tunnel local port 80
+./proxvn 80
+
+# HTTP Tunneling (get HTTPS URL)
+./proxvn -port 80 -proto http
+
+# Custom server
+./proxvn -server 103.77.246.206:8882 80</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>ProxVN</h4>
+                    <p>Tunnel service powered by <a href="https://aivps.online" target="_blank">aivps.online</a></p>
+                    <p>© 2026 TrongDev. All rights reserved.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel">Documentation</a>
+                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel/issues">Support</a>
+                    <a href="/dashboard/">Dashboard</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <a href="https://github.com/hoangtuvungcao">GitHub</a>
+                    <a href="mailto:trong20843@gmail.com">Email</a>
+                    <a href="https://vutrungocrong.fun">Website</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/script.js"></script>
+</body>
+</html>

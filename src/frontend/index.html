@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxVN Dashboard - TrongDev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header animate-fade-in">
+            <div class="logo-section">
+                <div class="logo-icon">🚀</div>
+                <div>
+                    <h1 class="holographic-text">ProxVN Dashboard</h1>
+                    <p class="subtitle">by TrongDev • Real-time Tunnel Monitoring</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="icon">🌙</span>
+                </button>
+                <div class="connection-status" id="connectionStatus">
+                    <span class="pulse-dot"></span>
+                    <span>Connected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid animate-slide-up">
+            <div class="stat-card card-3d" data-index="0">
+                <div class="card-glow"></div>
+                <div class="stat-icon gradient-1">🟢</div>
+                <div class="stat-content">
+                    <div class="stat-label">Tunnels Hoạt Động</div>
+                    <div class="stat-value" id="activeTunnels">
+                        <span class="counter" data-target="0">0</span>
+                    </div>
+                    <div class="stat-trend positive">
+                        <span>↑ 100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card card-3d" data-index="1">
+                <div class="card-glow"></div>
+                <div class="stat-icon gradient-2">📊</div>
+                <div class="stat-content">
+                    <div class="stat-label">Tổng Kết Nối</div>
+                    <div class="stat-value" id="totalConnections">
+                        <span class="counter" data-target="0">0</span>
+                    </div>
+                    <div class="stat-trend positive">
+                        <span>Live</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card card-3d" data-index="2">
+                <div class="card-glow"></div>
+                <div class="stat-icon gradient-3">📈</div>
+                <div class="stat-content">
+                    <div class="stat-label">Upload Total</div>
+                    <div class="stat-value" id="totalUpload">
+                        <span class="data-size">0 MB</span>
+                    </div>
+                    <div class="stat-trend positive">
+                        <span id="uploadRate">0 KB/s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card card-3d" data-index="3">
+                <div class="card-glow"></div>
+                <div class="stat-icon gradient-4">📉</div>
+                <div class="stat-content">
+                    <div class="stat-label">Download Total</div>
+                    <div class="stat-value" id="totalDownload">
+                        <span class="data-size">0 MB</span>
+                    </div>
+                    <div class="stat-trend positive">
+                        <span id="downloadRate">0 KB/s</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content animate-slide-up">
+            <!-- Tunnels Section -->
+            <section class="tunnels-section glass-card">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="title-icon">🔗</span>
+                        <span>Tunnels Đang Hoạt Động</span>
+                        <span class="pulse-indicator"></span>
+                    </h2>
+                    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
+                        <span class="icon">🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <div id="tunnelsList" class="tunnels-list">
+                    <!-- Tunnels will be loaded here -->
+                    <div class="loading-skeleton">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+
+                <div id="noTunnels" class="no-tunnels" style="display: none;">
+                    <div class="no-tunnels-animation">
+                        <div class="empty-icon">🔌</div>
+                        <div class="empty-rings">
+                            <div class="ring ring-1"></div>
+                            <div class="ring ring-2"></div>
+                            <div class="ring ring-3"></div>
+                        </div>
+                    </div>
+                    <h3>Chưa có tunnel nào</h3>
+                    <p>Khởi động ProxVN client để bắt đầu</p>
+                    <div class="code-snippet">
+                        <code>./proxvn-client 80</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Performance Chart -->
+            <section class="chart-section glass-card">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="title-icon">📊</span>
+                        <span>Hiệu Suất Real-time</span>
+                    </h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 <strong>TrongDev</strong> • ProxVN • Made with 💜</p>
+            <div class="footer-links">
+                <a href="#" class="footer-link">API Docs</a>
+                <a href="#" class="footer-link">GitHub</a>
+                <a href="#" class="footer-link">Support</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
