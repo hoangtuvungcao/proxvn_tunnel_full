@@ -13,7 +13,7 @@ ProxVN - Phiên bản 5.0.0
 </div>
 
 ---
-
+##CERT-PIN 5d21642f9c2ac2aef414ecb27b54cdb5d53cb6d554bbf965de19d2c8652f47c6
 ## 🆕 What's New in v4.0.1 (2026-01-12)
 
 ### 🔧 Bug Fixes
