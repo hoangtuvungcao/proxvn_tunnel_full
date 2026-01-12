@@ -121,8 +121,8 @@ proxvn --proto udp 19132
 |----------|----------|--------|
 | **Windows** | [proxvn.exe](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/windows.zip) | `sha256:53ecbae0afc41f076218010bf462929c8e267f7f60b3855617eedf7475663014` |
 | **Linux** | [proxvn-linux-client](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/linux.zip) | `sha256:7dff6cbfecf9b63255838dba109d79cfeea9b20aff5c24ab2841f3b60daf0c95` |
-| **macOS (M1)** | [proxvn-mac-m1](sha256:dbd23b7bb888b925797efd3151684b0164cbb785ed2d1f922cd7f5a69fd113c4) | `sha256:dbd23b7bb888b925797efd3151684b0164cbb785ed2d1f922cd7f5a69fd113c4` |
-| **macOS (Intel)** | [proxvn-mac-intel](sha256:6a6bb45a5447fa6f9d6aa16f2f8b102d40b35ad6cdfcbba2f416f1a3bd2eadac) | `sha256:6a6bb45a5447fa6f9d6aa16f2f8b102d40b35ad6cdfcbba2f416f1a3bd2eadac` |
+| **macOS (M1)** | [proxvn-mac-m1](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/mac-m1.zip) | `sha256:dbd23b7bb888b925797efd3151684b0164cbb785ed2d1f922cd7f5a69fd113c4` |
+| **macOS (Intel)** | [proxvn-mac-intel](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/mac-intel.zip) | `sha256:6a6bb45a5447fa6f9d6aa16f2f8b102d40b35ad6cdfcbba2f416f1a3bd2eadac` |
 | **Android (Termux)** | [proxvn-android](https://github.com/hoangtuvungcao/proxvn_tunnel/releases/download/v5.0.0/android.zip) | `sha256:888235024237ac8c7b5f87430205d83ad769eaa8dfb5866d3206595c2ae93acb` |
 
 ### 🏗️ Build Từ Source
