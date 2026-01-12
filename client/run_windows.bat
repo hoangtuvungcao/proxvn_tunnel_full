@@ -21,7 +21,7 @@ echo        --------------------------------
 echo.
 
 :: ===== CONFIG CỐ ĐỊNH =====
-set CERT_PIN=8ff1f269fa914ff6a6467ee7f9b8d7822408c67cbc6fd0c656532c9e68f3d071
+set CERT_PIN=5d21642f9c2ac2aef414ecb27b54cdb5d53cb6d554bbf965de19d2c8652f47c6
 
 :: ===== INPUT =====
 set /p HOST=➤ Host   [127.0.0.1]: 
