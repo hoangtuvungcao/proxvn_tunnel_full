@@ -209,15 +209,13 @@ proxvn --proto http 3000 \
        --cert-pin 5d21642f9c2ac2aef414ecb27b54cdb5d53cb6d554bbf965de19d2c8652f47c6
 ```
 
-**Chi tiết:** Xem [CERT_PINNING.md](CERT_PINNING.md)
+**Chi tiết:** Xem [CERT_PINNING.md](src/CERT_PINNING.md)
 
 ---
 
-## 📚 Tài Liệu Đầy Đủ
-
-- 📘 **[Quick Start Guide](QUICKSTART.md)** - Bắt đầu nhanh với các ví dụ cụ thể
-- 🔐 **[Certificate Pinning](CERT_PINNING.md)** - Bảo mật nâng cao
-- 🏠 **[Self-Hosting Guide](DOMAIN_SETUP.md)** - Tự host server riêng
+- 📘 **[Quick Start Guide](src/QUICKSTART.md)** - Bắt đầu nhanh với các ví dụ cụ thể
+- 🔐 **[Certificate Pinning](src/CERT_PINNING.md)** - Bảo mật nâng cao
+- 🏠 **[Self-Hosting Guide](src/DOMAIN_SETUP.md)** - Tự host server riêng
 - 📖 **[GitHub Wiki](https://github.com/hoangtuvungcao/proxvn_tunnel/wiki)** - Tài liệu chi tiết
 
 ---
@@ -315,7 +313,7 @@ ping 103.77.246.206
 telnet 103.77.246.206 8882
 ```
 
-### Chi tiết: [FAQ](wiki/FAQ.md)
+### Chi tiết: [FAQ](src/wiki/FAQ.md)
 
 ---
 
