@@ -1,6 +1,6 @@
-# ProxVN - Phiên bản 4.0.1
-
 <div align="center">
+ProxVN - Phiên bản 5.0.0
+
 
 ![ProxVN Logo](https://img.shields.io/badge/ProxVN-v4.0.1-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Non--Commercial-orange?style=for-the-badge)
