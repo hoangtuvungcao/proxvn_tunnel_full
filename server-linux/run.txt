@@ -1,3 +1,0 @@
-chmod +x sv/svproxvn
-
-./sv/svproxvn
