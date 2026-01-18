@@ -375,7 +375,7 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	})
 
 	// Serve web dashboard
-	dashboardDir := "../frontend"
+	dashboardDir := "./frontend"
 	if _, err := os.Stat("frontend"); err == nil {
 		dashboardDir = "./frontend"
 	}
