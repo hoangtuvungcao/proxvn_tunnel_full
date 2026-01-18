@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"proxvn/backend/internal/models"
 )
 
@@ -15,7 +14,12 @@ type Database struct {
 }
 
 func NewDatabase(dsn string) (*Database, error) {
-	db, err := sql.Open("postgres", dsn)
+	// If dsn is empty, use default SQLite file
+	if dsn == "" {
+		dsn = "./proxvn.db"
+	}
+	
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -24,9 +28,15 @@ func NewDatabase(dsn string) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	// SQLite specific settings
+	db.SetMaxOpenConns(1) // SQLite works best with single connection for writes
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(0) // No connection lifetime limit for SQLite
+
+	// Enable WAL mode for better concurrent reads
+	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
+	}
 
 	database := &Database{db: db}
 	if err := database.migrate(); err != nil {
@@ -38,46 +48,47 @@ func NewDatabase(dsn string) (*Database, error) {
 
 func (d *Database) migrate() error {
 	queries := []string{
-		`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`,
+		// Enable foreign keys
+		`PRAGMA foreign_keys = ON;`,
 		`
 		CREATE TABLE IF NOT EXISTS users (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			username VARCHAR(50) UNIQUE NOT NULL,
-			email VARCHAR(255) UNIQUE NOT NULL,
-			password VARCHAR(255) NOT NULL,
-			role VARCHAR(20) DEFAULT 'user',
-			api_key VARCHAR(255) UNIQUE,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		);
+			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+			username TEXT UNIQUE NOT NULL,
+			email TEXT UNIQUE NOT NULL,
+			password TEXT NOT NULL,
+			role TEXT DEFAULT 'user',
+			api_key TEXT UNIQUE,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);  
 		`,
 		`
 		CREATE TABLE IF NOT EXISTS tunnels (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			name VARCHAR(100) NOT NULL,
-			protocol VARCHAR(10) NOT NULL CHECK (protocol IN ('tcp', 'udp')),
-			local_host VARCHAR(255) NOT NULL,
+			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			name TEXT NOT NULL,
+			protocol TEXT NOT NULL CHECK (protocol IN ('tcp', 'udp', 'http')),
+			local_host TEXT NOT NULL,
 			local_port INTEGER NOT NULL CHECK (local_port > 0 AND local_port < 65536),
 			public_port INTEGER UNIQUE,
-			status VARCHAR(20) DEFAULT 'inactive',
-			client_id VARCHAR(255),
-			auth_token VARCHAR(255),
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			status TEXT DEFAULT 'inactive',
+			client_id TEXT,
+			auth_token TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 		`,
 		`
 		CREATE TABLE IF NOT EXISTS connections (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			tunnel_id UUID NOT NULL REFERENCES tunnels(id) ON DELETE CASCADE,
-			remote_addr INET NOT NULL,
-			connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			disconnected_at TIMESTAMP,
-			bytes_up BIGINT DEFAULT 0,
-			bytes_down BIGINT DEFAULT 0,
-			duration BIGINT DEFAULT 0
+			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+			tunnel_id TEXT NOT NULL REFERENCES tunnels(id) ON DELETE CASCADE,
+			remote_addr TEXT NOT NULL,
+			connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			disconnected_at DATETIME,
+			bytes_up INTEGER DEFAULT 0,
+			bytes_down INTEGER DEFAULT 0,
+			duration INTEGER DEFAULT 0
 		);
 		`,
 		`
@@ -90,20 +101,22 @@ func (d *Database) migrate() error {
 		CREATE INDEX IF NOT EXISTS idx_connections_tunnel_id ON connections(tunnel_id);
 		CREATE INDEX IF NOT EXISTS idx_connections_connected_at ON connections(connected_at);
 		`,
+		// SQLite triggers for updated_at (simpler than PostgreSQL functions)
 		`
-		CREATE OR REPLACE FUNCTION update_updated_at_column()
-		RETURNS TRIGGER AS $$
+		CREATE TRIGGER IF NOT EXISTS update_users_updated_at 
+		AFTER UPDATE ON users
+		FOR EACH ROW
 		BEGIN
-			NEW.updated_at = CURRENT_TIMESTAMP;
-			RETURN NEW;
+			UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 		END;
-		$$ language 'plpgsql';
 		`,
 		`
-		CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-		CREATE TRIGGER update_tunnels_updated_at BEFORE UPDATE ON tunnels
-			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+		CREATE TRIGGER IF NOT EXISTS update_tunnels_updated_at
+		AFTER UPDATE ON tunnels
+		FOR EACH ROW
+		BEGIN
+			UPDATE tunnels SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+		END;
 		`,
 	}
 
@@ -113,7 +126,7 @@ func (d *Database) migrate() error {
 		}
 	}
 
-	log.Println("Database migration completed successfully")
+	log.Println("[database] SQLite3 migration completed successfully")
 	return nil
 }
 
@@ -440,10 +453,11 @@ func (d *Database) GetMetrics() (*models.Metrics, error) {
 	}
 	
 	// Active users (users with active tunnels in last hour)
+	// SQLite: use datetime('now', '-1 hour') instead of INTERVAL
 	err = d.db.QueryRow(`
 		SELECT COUNT(DISTINCT t.user_id) 
 		FROM tunnels t 
-		WHERE t.status = 'active' AND t.last_seen > NOW() - INTERVAL '1 hour'
+		WHERE t.status = 'active' AND t.last_seen > datetime('now', '-1 hour')
 	`).Scan(&metrics.ActiveUsers)
 	if err != nil {
 		return nil, err

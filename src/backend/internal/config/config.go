@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -84,14 +83,13 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) GetDatabaseDSN() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		c.Database.Host,
-		c.Database.Port,
-		c.Database.User,
-		c.Database.Password,
-		c.Database.DBName,
-		c.Database.SSLMode,
-	)
+	// For SQLite3, return path from DB_PATH env or default
+	// Leave empty to disable database
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./proxvn.db" // Default SQLite file
+	}
+	return dbPath
 }
 
 func getEnv(key, defaultValue string) string {

@@ -15,6 +15,7 @@ type Message struct {
 	Key        string `json:"key,omitempty"`
 	ClientID   string `json:"client_id,omitempty"`
 	RemotePort int    `json:"remote_port,omitempty"`
+	RequestedPort int `json:"requested_port,omitempty"` // Port client wants to reuse on reconnect
 	Target     string `json:"target,omitempty"`
 	ID         string `json:"id,omitempty"`
 	Error      string `json:"error,omitempty"`

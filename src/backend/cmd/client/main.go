@@ -274,12 +274,27 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 }
 
 func (c *client) run() error {
+	// ✅ FIX: Exponential backoff để tránh spam reconnect
+	backoff := 3 * time.Second
+	maxBackoff := 5 * time.Minute
+	
 	for {
 		if err := c.connectControl(); err != nil {
 			log.Printf("[client] kết nối control thất bại: %v", err)
-			time.Sleep(3 * time.Second)
+			log.Printf("[client] retry sau %v...", backoff)
+			time.Sleep(backoff)
+			
+			// ✅ Exponential backoff: double mỗi lần fail, max 5 phút
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
 			continue
 		}
+		
+		// ✅ Reset backoff khi kết nối thành công
+		backoff = 3 * time.Second
+		
 		if err := c.receiveLoop(); err != nil {
 			log.Printf("[client] control lỗi: %v", err)
 		}
@@ -287,8 +302,9 @@ func (c *client) run() error {
 		if atomic.LoadUint32(&c.exitFlag) == 1 {
 			return nil
 		}
-		time.Sleep(3 * time.Second)
+		
 		log.Printf("[client] thử reconnect control...")
+		time.Sleep(backoff)
 	}
 }
 
@@ -348,6 +364,12 @@ func (c *client) connectControl() error {
 		Target:   c.localAddr,
 		Protocol: c.protocol,
 	}
+	
+	// If reconnecting and we had a port before, request the same port
+	if c.remotePort > 0 {
+		register.RequestedPort = c.remotePort
+	}
+	
 	if err := c.enc.Encode(register); err != nil {
 		return err
 	}

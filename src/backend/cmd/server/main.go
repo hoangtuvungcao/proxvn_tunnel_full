@@ -77,6 +77,10 @@ type server struct {
 	usedPorts      map[int]bool
 	portMu         sync.Mutex
 
+	// Port reservation for reconnecting clients
+	portReservations map[string]*portReservation  // client key -> reservation
+	reservationMu    sync.Mutex
+
 	udpServer    *net.UDPConn
 	udpMu        sync.Mutex
 	udpSessions  map[string]*udpServerSession
@@ -100,6 +104,12 @@ type rateLimiter struct {
 	httpRequests  *rate.Limiter
 	udpSessions   *rate.Limiter
 	lastSeen      time.Time
+}
+
+// portReservation holds a reserved port for a client key with expiry time
+type portReservation struct {
+	port      int
+	expiresAt time.Time
 }
 
 type clientSession struct {
@@ -282,16 +292,30 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 		}
 	}
 
+	// ✅ FIX: Initialize database OUTSIDE goroutine với proper cleanup
+	var db *database.Database
+	dbDSN := cfg.GetDatabaseDSN()
+	if dbDSN != "" {
+		db, err = database.NewDatabase(dbDSN)
+		if err != nil {
+			log.Printf("[database] Failed to init: %v (running without database)", err)
+		} else {
+			defer db.Close() // ✅ This WILL run when main() exits
+			log.Printf("[database] SQLite3 initialized successfully")
+		}
+	}
+
 	srv := &server{
-		listenPort:     *portFlag,
-		clients:        make(map[string]*clientSession),
-		availablePorts: make([]int, 0, publicPortEnd-publicPortStart+1),
-		usedPorts:      make(map[int]bool),
-		udpSessions:    make(map[string]*udpServerSession),
-		proxyWaiting:   make(map[string]chan net.Conn),
-		httpRequests:   make(map[string]chan *httpproxy.HTTPResponse),
-		rateLimiters:   make(map[string]*rateLimiter),
-		connSemaphore:  make(chan struct{}, maxConnections),
+		listenPort:       *portFlag,
+		clients:          make(map[string]*clientSession),
+		availablePorts:   make([]int, 0, publicPortEnd-publicPortStart+1),
+		usedPorts:        make(map[int]bool),
+		portReservations: make(map[string]*portReservation),
+		udpSessions:      make(map[string]*udpServerSession),
+		proxyWaiting:     make(map[string]chan net.Conn),
+		httpRequests:     make(map[string]chan *httpproxy.HTTPResponse),
+		rateLimiters:     make(map[string]*rateLimiter),
+		connSemaphore:    make(chan struct{}, maxConnections),
 	}
 
 	// Initialize port pool
@@ -302,8 +326,11 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 	// Start rate limiter cleanup goroutine
 	go srv.cleanupRateLimiters()
 
-	// Start HTTP/API/Dashboard server
-	go srv.startHTTPServer(cfg)
+	// Start port reservation cleanup goroutine
+	go srv.cleanupPortReservations()
+
+	// Start HTTP/API/Dashboard server (✅ pass db as param)
+	go srv.startHTTPServer(cfg, db)
 
 	// Initialize HTTP proxy for HTTP tunneling (if SSL cert available)
 	// Landing page will be served on main domain (vutrungocrong.fun) via HTTPS
@@ -316,26 +343,18 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 }
 
 // startHTTPServer starts the HTTP server with API and dashboard
-func (s *server) startHTTPServer(cfg *config.Config) {
-	// Initialize database (optional)
-	var db *database.Database
+// NOTE: db is passed as parameter to avoid leak (defer in goroutine never runs)
+func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
+	// Initialize handlers if database available
 	var handlers *api.Handler
 	var authService *auth.AuthService
-
-	dbDSN := cfg.GetDatabaseDSN()
-	if dbDSN != "" {
-		var err error
-		db, err = database.NewDatabase(dbDSN)
-		if err != nil {
-			log.Printf("[api] Database unavailable: %v (tunnel-only mode)", err)
-		} else {
-			defer db.Close()
-			authService = auth.NewAuthService(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiry)
-			handlers = api.NewHandler(db, authService)
-			log.Printf("[api] Database connected")
-		}
+	
+	if db != nil {
+		authService = auth.NewAuthService(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiry)
+		handlers = api.NewHandler(db, authService)
+		log.Printf("[api] Database connected")
 	} else {
-		log.Printf("[api] No database config (tunnel-only mode)")
+		log.Printf("[api] No database (tunnel-only mode)")
 	}
 
 	// Setup Gin
@@ -392,55 +411,9 @@ func (s *server) startHTTPServer(cfg *config.Config) {
 	// Explicitly redirect /dashboard/ to /dashboard/index.html if needed,
 	// or ensure main route hits it.
 
-	// Simple metrics endpoint (no DB required)
-	router.GET("/api/v1/metrics", func(c *gin.Context) {
-		s.clientsMu.RLock()
-		activeTunnels := len(s.clients)
-		s.clientsMu.RUnlock()
+	// Simple metrics endpoint removed - now handled by handlers.GetMetrics() if DB available
 
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data": gin.H{
-				"active_tunnels":    activeTunnels,
-				"total_connections": 0,
-				"total_bytes_up":    0,
-				"total_bytes_down":  0,
-			},
-		})
-	})
-
-	// Simple tunnels list endpoint
-	router.GET("/api/v1/tunnels", func(c *gin.Context) {
-		s.clientsMu.RLock()
-		tunnels := make([]gin.H, 0, len(s.clients))
-		for _, session := range s.clients {
-			host, port, _ := net.SplitHostPort(session.target)
-			if host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1" {
-				host = session.remoteIP // Use actual client IP
-			}
-			if port == "" {
-				port = session.target // Fallback
-			}
-
-			tunnels = append(tunnels, gin.H{
-				"name":        session.clientID,
-				"status":      "active",
-				"protocol":    session.protocol,
-				"local_host":  host,
-				"local_port":  port,
-				"public_port": session.publicPort,
-				"public_host": fmt.Sprintf("103.77.246.206:%d", session.publicPort),
-				"bytes_up":    atomic.LoadUint64(&session.bytesUp),
-				"bytes_down":  atomic.LoadUint64(&session.bytesDown),
-			})
-		}
-		s.clientsMu.RUnlock()
-
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    tunnels,
-		})
-	})
+	// Simple tunnels list endpoint removed - now handled by handlers.GetAllTunnels() if DB available
 
 	// Public WebSocket endpoint for dashboard (no auth required)
 	router.GET("/api/v1/dashboard/ws", func(c *gin.Context) {
@@ -829,8 +802,8 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 		}
 	}
 
-	// Assign public port
-	publicPort := s.getNextPublicPort()
+	// Assign public port (try to honor requested port for reconnecting clients)
+	publicPort := s.getNextPublicPort(key, msg.RequestedPort)
 
 	session.clientID = strings.TrimSpace(msg.ClientID)
 	if session.clientID == "" {
@@ -1392,8 +1365,19 @@ func (s *server) removeClient(session *clientSession) {
 	if exists && existingSession == session {
 		delete(s.clients, session.clientID)
 
-		// Release port back to pool
-		if session.publicPort > 0 {
+		// Create port reservation instead of releasing immediately
+		// This allows the client to reconnect and get the same port within 5 minutes
+		if session.publicPort > 0 && session.key != "" {
+			s.reservationMu.Lock()
+			s.portReservations[session.key] = &portReservation{
+				port:      session.publicPort,
+				expiresAt: time.Now().Add(5 * time.Minute), // 5 minute grace period
+			}
+			s.reservationMu.Unlock()
+			log.Printf("[server] Reserved port %d for client %s (key: %s) for 5 minutes", 
+				session.publicPort, session.clientID, session.key)
+			
+			// Still release the port back to pool, but keep reservation
 			s.releasePort(session.publicPort)
 		}
 	}
@@ -1474,10 +1458,41 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 	})
 }
 
-func (s *server) getNextPublicPort() int {
+func (s *server) getNextPublicPort(clientKey string, requestedPort int) int {
 	s.portMu.Lock()
 	defer s.portMu.Unlock()
 
+	// Check if client has a valid reservation
+	if requestedPort > 0 && clientKey != "" {
+		s.reservationMu.Lock()
+		reservation, hasReservation := s.portReservations[clientKey]
+		s.reservationMu.Unlock()
+
+		if hasReservation && reservation.port == requestedPort && time.Now().Before(reservation.expiresAt) {
+			// Port is reserved for this client and not expired
+			// Check if it's actually available
+			if !s.usedPorts[requestedPort] {
+				// Find and remove from availablePorts
+				for i, p := range s.availablePorts {
+					if p == requestedPort {
+						s.availablePorts = append(s.availablePorts[:i], s.availablePorts[i+1:]...)
+						break
+					}
+				}
+				s.usedPorts[requestedPort] = true
+				
+				// Clear reservation since it's now in use
+				s.reservationMu.Lock()
+				delete(s.portReservations, clientKey)
+				s.reservationMu.Unlock()
+				
+				log.Printf("[server] Assigned reserved port %d to client %s", requestedPort, clientKey)
+				return requestedPort
+			}
+		}
+	}
+
+	// No valid reservation, get next available port
 	if len(s.availablePorts) == 0 {
 		log.Printf("[server] ⚠️  Port pool exhausted!")
 		return publicPortStart // Fallback
