@@ -33,7 +33,7 @@
 ## 🚀 Cài Đặt & Chạy Nhanh
 
 ### 1. Tải về (Download)
-Tải binary mới nhất từ [Releases](https://github.com/hoangtuvungcao/proxvn_tunnel/releases) hoặc build từ source:
+Tải binary mới nhất từ [Releases](https://github.com/hoangtuvungcao/proxvn_tunnel_full/releases) hoặc build từ source:
 
 ```bash
 # Build (yêu cầu Go 1.21+)
@@ -734,10 +734,10 @@ sudo mount -t davfs https://subdomain.vutrungocrong.fun /mnt/proxvn
 ## 🤝 Support & Community
 
 *   📧 **Email**: trong20843@gmail.com
-*   💬 **Telegram**: [t.me/proxvn](https://t.me/proxvn)
-*   🐛 **Báo lỗi**: [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
+*   💬 **Telegram**: [t.me/ZzTLINHzZ](https://t.me/ZzTLINHzZ)
+*   🐛 **Báo lỗi**: [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
 *   🌐 **Website**: [https://vutrungocrong.fun](https://vutrungocrong.fun)
-*   📖 **Documentation**: [https://github.com/hoangtuvungcao/proxvn_tunnel/tree/main/docs](https://github.com/hoangtuvungcao/proxvn_tunnel/tree/main/docs)
+*   📖 **Documentation**: [https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs](https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs)
 
 ---
 
