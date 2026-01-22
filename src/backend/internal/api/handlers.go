@@ -1,40 +1,48 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"proxvn/backend/internal/auth"
 	"proxvn/backend/internal/database"
 	"proxvn/backend/internal/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var startTime = time.Now()
 
 type Handler struct {
-	db         *database.Database
+	db          *database.Database
 	authService *auth.AuthService
 }
 
 func NewHandler(db *database.Database, authService *auth.AuthService) *Handler {
 	return &Handler{
-		db:         db,
+		db:          db,
 		authService: authService,
 	}
 }
 
-// Auth handlers
+// ============================================
+// AUTH HANDLERS
+// ============================================
+
 func (h *Handler) Login(c *gin.Context) {
-	var req models.LoginRequest
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "Invalid request",
 		})
 		return
 	}
@@ -48,7 +56,8 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	if !h.authService.CheckPassword(req.Password, user.Password) {
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, models.APIResponse{
 			Success: false,
 			Error:   "Invalid credentials",
@@ -56,6 +65,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Generate token
 	token, err := h.authService.GenerateToken(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -65,80 +75,72 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	user.Password = "" // Don't send password to client
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: map[string]interface{}{
-			"user":  user,
-			"token": token,
+			"token":    token,
+			"username": user.Username,
+			"role":     user.Role,
 		},
 	})
 }
 
 func (h *Handler) Register(c *gin.Context) {
-	var req models.RegisterRequest
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   err.Error(),
-		})
-		return
-	}
-
-	// Validate input
-	if len(req.Password) < 6 {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error:   "Password must be at least 6 characters",
-		})
-		return
-	}
-	if len(req.Username) < 3 {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error:   "Username must be at least 3 characters",
+			Error:   "Invalid request: " + err.Error(),
 		})
 		return
 	}
 
 	// Hash password
-	hashedPassword, err := h.authService.HashPassword(req.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
-			Error:   "Failed to hash password",
+			Error:   "Failed to process password",
 		})
 		return
 	}
 
 	user := &models.User{
+		ID:       uuid.New(),
 		Username: req.Username,
 		Email:    req.Email,
-		Password: hashedPassword,
+		Password: string(hashedPassword),
 		Role:     models.UserRoleUser,
-		APIKey:   h.authService.GenerateAPIKey(),
+		APIKey:   uuid.New().String(),
 	}
 
 	if err := h.db.CreateUser(user); err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
+		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   "Failed to create user",
+			Error:   "Username or email already exists",
 		})
 		return
 	}
 
-	user.Password = "" // Don't send password to client
 	c.JSON(http.StatusCreated, models.APIResponse{
 		Success: true,
-		Data:    user,
-		Message: "User created successfully",
+		Data: map[string]interface{}{
+			"user_id":  user.ID,
+			"username": user.Username,
+			"api_key":  user.APIKey,
+		},
 	})
 }
 
 func (h *Handler) GetProfile(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	
-	user, err := h.db.GetUserByUsername(userID.(string))
+	username := c.GetString("username")
+
+	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.APIResponse{
 			Success: false,
@@ -147,275 +149,282 @@ func (h *Handler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	user.Password = "" // Don't send password to client
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data:    user,
+		Data: map[string]interface{}{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"role":     user.Role,
+			"api_key":  user.APIKey,
+		},
 	})
 }
 
-// Tunnel handlers
-func (h *Handler) GetTunnels(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	
-	tunnels, err := h.db.GetTunnelsByUserID(userID.(string))
+// ============================================
+// ADMIN - USER MANAGEMENT
+// ============================================
+
+func (h *Handler) GetAllUsers(c *gin.Context) {
+	users, err := h.db.GetAllUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
-			Error:   "Failed to get tunnels",
+			Error:   "Failed to fetch users",
 		})
 		return
+	}
+
+	// Don't send passwords
+	sanitized := make([]map[string]interface{}, len(users))
+	for i, user := range users {
+		sanitized[i] = map[string]interface{}{
+			"id":         user.ID,
+			"username":   user.Username,
+			"email":      user.Email,
+			"role":       user.Role,
+			"api_key":    user.APIKey,
+			"created_at": user.CreatedAt,
+		}
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data:    tunnels,
+		Data:    sanitized,
 	})
 }
 
-func (h *Handler) CreateTunnel(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	
-	var req models.CreateTunnelRequest
+func (h *Handler) CreateUserByAdmin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+		Role     string `json:"role"`
+	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "Invalid request",
 		})
 		return
 	}
 
-	// Generate unique public port
-	publicPort := h.generatePublicPort()
-	
-	// Generate auth token
-	authToken := h.authService.GenerateAPIKey()
-
-	tunnel := &models.Tunnel{
-		UserID:     uuid.MustParse(userID.(string)),
-		Name:       req.Name,
-		Protocol:   req.Protocol,
-		LocalHost:  req.LocalHost,
-		LocalPort:  req.LocalPort,
-		PublicPort: publicPort,
-		Status:     models.TunnelStatusInactive,
-		AuthToken:  authToken,
-	}
-
-	if err := h.db.CreateTunnel(tunnel); err != nil {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
-			Error:   "Failed to create tunnel",
+			Error:   "Failed to process password",
+		})
+		return
+	}
+
+	role := req.Role
+	if role == "" {
+		role = models.UserRoleUser
+	}
+
+	user := &models.User{
+		ID:       uuid.New(),
+		Username: req.Username,
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Role:     role,
+		APIKey:   uuid.New().String(),
+	}
+
+	if err := h.db.CreateUser(user); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "Failed to create user",
 		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, models.APIResponse{
 		Success: true,
-		Data:    tunnel,
-		Message: "Tunnel created successfully",
+		Data: map[string]interface{}{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"role":     user.Role,
+			"api_key":  user.APIKey,
+		},
 	})
 }
 
-func (h *Handler) GetTunnel(c *gin.Context) {
-	tunnelID := c.Param("id")
-	
-	tunnel, err := h.db.GetTunnelByID(tunnelID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, models.APIResponse{
-			Success: false,
-			Error:   "Tunnel not found",
-		})
-		return
-	}
+func (h *Handler) DeleteUser(c *gin.Context) {
+	userID := c.Param("id")
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    tunnel,
-	})
-}
-
-func (h *Handler) UpdateTunnel(c *gin.Context) {
-	tunnelID := c.Param("id")
-	
-	var req models.UpdateTunnelRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// Don't allow deleting yourself
+	currentUserID := c.GetString("user_id")
+	if userID == currentUserID {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "Cannot delete your own account",
 		})
 		return
 	}
 
-	userID, _ := c.Get("user_id")
-	if err := h.db.UpdateTunnel(tunnelID, userID.(string), req.Name, req.LocalHost, req.LocalPort); err != nil {
+	if err := h.db.DeleteUser(userID); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
-			Error:   err.Error(),
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Message: "Tunnel updated successfully",
-	})
-}
-
-func (h *Handler) DeleteTunnel(c *gin.Context) {
-	tunnelID := c.Param("id")
-	userID, _ := c.Get("user_id")
-	
-	if err := h.db.DeleteTunnel(tunnelID, userID.(string)); err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   err.Error(),
+			Error:   "Failed to delete user",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Message: "Tunnel deleted successfully",
+		Data:    "User deleted successfully",
 	})
 }
 
-// Metrics handlers
-func (h *Handler) GetMetrics(c *gin.Context) {
-	metrics, err := h.db.GetMetrics()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   "Failed to get metrics",
-		})
-		return
-	}
-
-	// Calculate uptime (using process start time)
-	uptime := time.Since(startTime)
-	hours := int(uptime.Hours())
-	minutes := int(uptime.Minutes()) % 60
-	seconds := int(uptime.Seconds()) % 60
-	metrics.Uptime = fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
-
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    metrics,
-	})
-}
-
-func (h *Handler) GetTunnelStats(c *gin.Context) {
-	tunnelID := c.Param("id")
-	
-	stats, err := h.db.GetTunnelStats(tunnelID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   "Failed to get tunnel stats",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    stats,
-	})
-}
-
-// Admin handlers
-func (h *Handler) GetAllUsers(c *gin.Context) {
-	users, err := h.db.GetAllUsers()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   "Failed to get users",
-		})
-		return
-	}
-	
-	// Remove passwords from response
-	for _, user := range users {
-		user.Password = ""
-	}
-	
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    users,
-	})
-}
+// ============================================
+// ADMIN - TUNNEL MANAGEMENT
+// ============================================
 
 func (h *Handler) GetAllTunnels(c *gin.Context) {
 	tunnels, err := h.db.GetAllTunnels()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
-			Error:   "Failed to get tunnels",
+			Error:   "Failed to fetch tunnels",
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    tunnels,
 	})
 }
 
-// Helper functions
-func (h *Handler) generatePublicPort() int {
-	// Generate unique port in range 10000-65535
-	for i := 0; i < 100; i++ {
-		port := 10000 + (int(time.Now().UnixNano()/1000) % 55535)
-		if h.db.IsPortAvailable(port) {
-			return port
-		}
-		time.Sleep(time.Millisecond)
+func (h *Handler) DeleteTunnelByAdmin(c *gin.Context) {
+	tunnelID := c.Param("id")
+
+	if err := h.db.DeleteTunnelByAdmin(tunnelID); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   "Failed to delete tunnel",
+		})
+		return
 	}
-	// Fallback: random port
-	return 10000 + int(time.Now().Unix()%55535)
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    "Tunnel deleted successfully",
+	})
 }
 
-// WebSocket handler for real-time updates
-func (h *Handler) HandleWebSocket(c *gin.Context) {
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true // In production, validate origin properly
-		},
+// ============================================
+// ADMIN - SYSTEM STATS
+// ============================================
+
+func (h *Handler) GetSystemStats(c *gin.Context) {
+	dbStats, err := h.db.GetDatabaseStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   "Failed to get stats",
+		})
+		return
 	}
-	
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    dbStats,
+	})
+}
+
+// ============================================
+// TUNNEL HANDLERS (User)
+// ============================================
+
+func (h *Handler) GetTunnels(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	tunnels, err := h.db.GetTunnelsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   "Failed to fetch tunnels",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    tunnels,
+	})
+}
+
+func (h *Handler) GetMetrics(c *gin.Context) {
+	metrics, err := h.db.GetMetrics()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   "Failed to fetch metrics",
+		})
+		return
+	}
+
+	uptime := time.Since(startTime)
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"active_tunnels":    metrics.ActiveTunnels,
+			"total_connections": metrics.TotalConnections,
+			"total_bytes_up":    metrics.TotalBytesUp,
+			"total_bytes_down":  metrics.TotalBytesDown,
+			"active_users":      metrics.ActiveUsers,
+			"uptime_seconds":    uptime.Seconds(),
+			"uptime_formatted":  uptime.String(),
+		},
+	})
+}
+
+func (h *Handler) Health(c *gin.Context) {
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"status": "healthy",
+			"uptime": time.Since(startTime).String(),
+		},
+	})
+}
+
+// ============================================
+// WEBSOCKET
+// ============================================
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func (h *Handler) HandleWebSocket(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 	defer conn.Close()
-	
-	// Send initial tunnel status
-	userID, exists := c.Get("user_id")
-	if !exists {
-		return
-	}
-	
-	// Send updates every 2 seconds
-	ticker := time.NewTicker(2 * time.Second)
+
+	// Send updates every 5 seconds
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
-	for {
-		select {
-		case <-ticker.C:
-			tunnels, err := h.db.GetTunnelsByUserID(userID.(string))
-			if err != nil {
-				continue
-			}
-			
-			msg := models.WebSocketMessage{
-				Type:      models.WSMessageTypeTunnelUpdate,
-				Data:      tunnels,
-				Timestamp: time.Now(),
-			}
-			
-			if err := conn.WriteJSON(msg); err != nil {
-				return
-			}
+
+	for range ticker.C {
+		metrics, err := h.db.GetMetrics()
+		if err != nil {
+			continue
+		}
+
+		if err := conn.WriteJSON(metrics); err != nil {
+			break
 		}
 	}
 }

@@ -4,13 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
+
+	"proxvn/backend/internal/models"
 
 	_ "github.com/mattn/go-sqlite3"
-	"proxvn/backend/internal/models"
 )
 
 type Database struct {
 	db *sql.DB
+	// Prepared statements cache
+	stmtCache map[string]*sql.Stmt
 }
 
 func NewDatabase(dsn string) (*Database, error) {
@@ -18,7 +22,10 @@ func NewDatabase(dsn string) (*Database, error) {
 	if dsn == "" {
 		dsn = "./proxvn.db"
 	}
-	
+
+	// SQLite connection string với optimizations
+	dsn += "?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_cache_size=-64000&_busy_timeout=5000"
+
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
@@ -28,21 +35,26 @@ func NewDatabase(dsn string) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// SQLite specific settings
-	db.SetMaxOpenConns(1) // SQLite works best with single connection for writes
-	db.SetMaxIdleConns(1)
-	db.SetConnMaxLifetime(0) // No connection lifetime limit for SQLite
+	// SQLite optimized settings
+	// Cho phép nhiều concurrent readers
+	db.SetMaxOpenConns(25)                  // Tăng từ 1 để hỗ trợ concurrent reads
+	db.SetMaxIdleConns(5)                   // Giữ connections sẵn sàng
+	db.SetConnMaxLifetime(30 * time.Minute) // Recycle connections
+	db.SetConnMaxIdleTime(5 * time.Minute)  // Close idle connections
 
-	// Enable WAL mode for better concurrent reads
-	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
-		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
+	database := &Database{
+		db:        db,
+		stmtCache: make(map[string]*sql.Stmt),
 	}
 
-	database := &Database{db: db}
 	if err := database.migrate(); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	// Start cleanup routine
+	go database.cleanupOldConnections()
+
+	log.Println("[database] SQLite3 initialized with optimizations")
 	return database, nil
 }
 
@@ -140,10 +152,10 @@ func (d *Database) CreateUser(user *models.User) error {
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, created_at, updated_at
 	`
-	
+
 	err := d.db.QueryRow(query, user.Username, user.Email, user.Password, user.Role, user.APIKey).
 		Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
-	
+
 	return err
 }
 
@@ -153,16 +165,16 @@ func (d *Database) GetUserByUsername(username string) (*models.User, error) {
 		SELECT id, username, email, password, role, api_key, created_at, updated_at
 		FROM users WHERE username = $1
 	`
-	
+
 	err := d.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Password,
 		&user.Role, &user.APIKey, &user.CreatedAt, &user.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -172,16 +184,16 @@ func (d *Database) GetUserByAPIKey(apiKey string) (*models.User, error) {
 		SELECT id, username, email, password, role, api_key, created_at, updated_at
 		FROM users WHERE api_key = $1
 	`
-	
+
 	err := d.db.QueryRow(query, apiKey).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Password,
 		&user.Role, &user.APIKey, &user.CreatedAt, &user.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -190,13 +202,13 @@ func (d *Database) GetAllUsers() ([]*models.User, error) {
 		SELECT id, username, email, password, role, api_key, created_at, updated_at
 		FROM users ORDER BY created_at DESC
 	`
-	
+
 	rows, err := d.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var users []*models.User
 	for rows.Next() {
 		user := &models.User{}
@@ -209,7 +221,7 @@ func (d *Database) GetAllUsers() ([]*models.User, error) {
 		}
 		users = append(users, user)
 	}
-	
+
 	return users, rows.Err()
 }
 
@@ -219,13 +231,13 @@ func (d *Database) CreateTunnel(tunnel *models.Tunnel) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, created_at, updated_at, last_seen
 	`
-	
+
 	err := d.db.QueryRow(query,
 		tunnel.UserID, tunnel.Name, tunnel.Protocol,
 		tunnel.LocalHost, tunnel.LocalPort, tunnel.PublicPort,
 		tunnel.Status, tunnel.ClientID, tunnel.AuthToken,
 	).Scan(&tunnel.ID, &tunnel.CreatedAt, &tunnel.UpdatedAt, &tunnel.LastSeen)
-	
+
 	return err
 }
 
@@ -235,13 +247,13 @@ func (d *Database) GetTunnelsByUserID(userID string) ([]*models.Tunnel, error) {
 			   status, client_id, auth_token, created_at, updated_at, last_seen
 		FROM tunnels WHERE user_id = $1 ORDER BY created_at DESC
 	`
-	
+
 	rows, err := d.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var tunnels []*models.Tunnel
 	for rows.Next() {
 		tunnel := &models.Tunnel{}
@@ -256,7 +268,7 @@ func (d *Database) GetTunnelsByUserID(userID string) ([]*models.Tunnel, error) {
 		}
 		tunnels = append(tunnels, tunnel)
 	}
-	
+
 	return tunnels, rows.Err()
 }
 
@@ -267,18 +279,18 @@ func (d *Database) GetTunnelByID(tunnelID string) (*models.Tunnel, error) {
 			   status, client_id, auth_token, created_at, updated_at, last_seen
 		FROM tunnels WHERE id = $1
 	`
-	
+
 	err := d.db.QueryRow(query, tunnelID).Scan(
 		&tunnel.ID, &tunnel.UserID, &tunnel.Name, &tunnel.Protocol,
 		&tunnel.LocalHost, &tunnel.LocalPort, &tunnel.PublicPort,
 		&tunnel.Status, &tunnel.ClientID, &tunnel.AuthToken,
 		&tunnel.CreatedAt, &tunnel.UpdatedAt, &tunnel.LastSeen,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return tunnel, nil
 }
 
@@ -289,18 +301,18 @@ func (d *Database) GetTunnelByPublicPort(port int) (*models.Tunnel, error) {
 			   status, client_id, auth_token, created_at, updated_at, last_seen
 		FROM tunnels WHERE public_port = $1
 	`
-	
+
 	err := d.db.QueryRow(query, port).Scan(
 		&tunnel.ID, &tunnel.UserID, &tunnel.Name, &tunnel.Protocol,
 		&tunnel.LocalHost, &tunnel.LocalPort, &tunnel.PublicPort,
 		&tunnel.Status, &tunnel.ClientID, &tunnel.AuthToken,
 		&tunnel.CreatedAt, &tunnel.UpdatedAt, &tunnel.LastSeen,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return tunnel, nil
 }
 
@@ -310,13 +322,13 @@ func (d *Database) GetAllTunnels() ([]*models.Tunnel, error) {
 			   status, client_id, auth_token, created_at, updated_at, last_seen
 		FROM tunnels ORDER BY created_at DESC
 	`
-	
+
 	rows, err := d.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var tunnels []*models.Tunnel
 	for rows.Next() {
 		tunnel := &models.Tunnel{}
@@ -331,7 +343,7 @@ func (d *Database) GetAllTunnels() ([]*models.Tunnel, error) {
 		}
 		tunnels = append(tunnels, tunnel)
 	}
-	
+
 	return tunnels, rows.Err()
 }
 
@@ -404,7 +416,7 @@ func (d *Database) CreateConnection(conn *models.Connection) error {
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	
+
 	return d.db.QueryRow(query,
 		conn.TunnelID, conn.RemoteAddr, conn.ConnectedAt,
 		conn.BytesUp, conn.BytesDown, conn.Duration,
@@ -417,41 +429,41 @@ func (d *Database) UpdateConnection(conn *models.Connection) error {
 		SET disconnected_at = $1, bytes_up = $2, bytes_down = $3, duration = $4
 		WHERE id = $5
 	`
-	
+
 	_, err := d.db.Exec(query,
 		conn.DisconnectedAt, conn.BytesUp, conn.BytesDown, conn.Duration, conn.ID,
 	)
-	
+
 	return err
 }
 
 func (d *Database) GetMetrics() (*models.Metrics, error) {
 	metrics := &models.Metrics{}
-	
+
 	// Active tunnels
 	err := d.db.QueryRow(`SELECT COUNT(*) FROM tunnels WHERE status = 'active'`).Scan(&metrics.ActiveTunnels)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Total connections
 	err = d.db.QueryRow(`SELECT COUNT(*) FROM connections`).Scan(&metrics.TotalConnections)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Total bytes up
 	err = d.db.QueryRow(`SELECT COALESCE(SUM(bytes_up), 0) FROM connections`).Scan(&metrics.TotalBytesUp)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Total bytes down
 	err = d.db.QueryRow(`SELECT COALESCE(SUM(bytes_down), 0) FROM connections`).Scan(&metrics.TotalBytesDown)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Active users (users with active tunnels in last hour)
 	// SQLite: use datetime('now', '-1 hour') instead of INTERVAL
 	err = d.db.QueryRow(`
@@ -462,13 +474,13 @@ func (d *Database) GetMetrics() (*models.Metrics, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return metrics, nil
 }
 
 func (d *Database) GetTunnelStats(tunnelID string) (*models.TunnelStats, error) {
 	stats := &models.TunnelStats{}
-	
+
 	query := `
 		SELECT 
 			COUNT(*) as connections,
@@ -479,14 +491,14 @@ func (d *Database) GetTunnelStats(tunnelID string) (*models.TunnelStats, error) 
 		LEFT JOIN tunnels t ON c.tunnel_id = t.id
 		WHERE c.tunnel_id = $1
 	`
-	
+
 	err := d.db.QueryRow(query, tunnelID).Scan(
 		&stats.Connections, &stats.BytesUp, &stats.BytesDown, &stats.LastActive,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return stats, nil
 }

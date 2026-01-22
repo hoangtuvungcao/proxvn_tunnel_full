@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý người dùng • ProxVN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .users-table th {
+            color: var(--color-text-muted);
+            font-weight: 600;
+        }
+
+        .badge-role {
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-user {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .actions-cell {
+            text-align: right;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-card);
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 500px;
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-icon">🚀</span>
+                <span class="brand-title">ProxVN Admin</span>
+            </div>
+            <div class="topbar-actions">
+                <a href="index.html" class="ghost-btn">Dashboard</a>
+                <button onclick="logout()" class="ghost-btn">Đăng xuất</button>
+            </div>
+        </header>
+
+        <main class="layout-grid">
+            <section class="panel full-width">
+                <div class="panel-header">
+                    <h2 class="panel-title">Danh sách người dùng</h2>
+                    <button class="btn-primary" onclick="openCreateUserModal()">+ Thêm người dùng</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Ngày tạo</th>
+                                <th class="actions-cell">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersList"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <h3>Thêm thành viên mới</h3>
+            <form id="createUserForm" style="margin-top: 1rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem;">Username</label>
+                    <input type="text" name="username" required
+                        style="width:100%; padding:0.5rem; background:var(--bg); border:1px solid var(--color-border); color:var(--text); border-radius:0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem;">Email</label>
+                    <input type="email" name="email" required
+                        style="width:100%; padding:0.5rem; background:var(--bg); border:1px solid var(--color-border); color:var(--text); border-radius:0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem;">Mật khẩu</label>
+                    <input type="password" name="password" required
+                        style="width:100%; padding:0.5rem; background:var(--bg); border:1px solid var(--color-border); color:var(--text); border-radius:0.5rem;">
+                </div>
+                <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                    <button type="button" class="ghost-btn" onclick="closeCreateUserModal()">Hủy</button>
+                    <button type="submit" class="btn-primary">Tạo tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Override or extend app.js functions if needed, but app.js has shared logic
+        document.addEventListener('DOMContentLoaded', loadUsers);
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, { headers: authHeader() });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                renderUsers(data.data);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersList');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>
+                        <div style="font-weight:600;">${u.username}</div>
+                        <div style="font-size:0.75rem; color:var(--color-text-muted);">${u.id}</div>
+                    </td>
+                    <td>${u.email}</td>
+                    <td><span class="badge-role badge-${u.role}">${u.role}</span></td>
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td class="actions-cell">
+                        <button class="ghost-btn btn-sm" style="color:var(--danger);" onclick="deleteUser('${u.id}')">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        const modal = document.getElementById('createUserModal');
+        function openCreateUserModal() { modal.classList.add('open'); }
+        function closeCreateUserModal() { modal.classList.remove('open'); }
+
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.role = 'user'; // Default role
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, {
+                    method: 'POST',
+                    headers: authHeader(),
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeCreateUserModal();
+                    loadUsers();
+                    e.target.reset();
+                } else {
+                    const err = await res.json();
+                    alert(err.error);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối');
+            }
+        });
+
+        async function deleteUser(id) {
+            if (!confirm('Bạn có chắc muốn xóa user này?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: authHeader()
+                });
+                if (res.ok) loadUsers();
+            } catch (e) { alert('Lỗi xóa user'); }
+        }
+    </script>
+</body>
+
+</html>

@@ -31,15 +31,16 @@ type ClientSession interface {
 
 // HTTPProxyServer handles HTTPS requests and routes them to appropriate tunnels
 type HTTPProxyServer struct {
-	mu         sync.RWMutex
-	subdomains map[string]ClientSession // subdomain -> client session
-	httpServer *http.Server
-	certFile   string
-	keyFile    string
-	baseDomain string // Configurable base domain
-	httpPort   int    // Configurable HTTP port
-	landingDir string // Landing page directory
-	binDir     string // Bin directory for downloads
+	mu             sync.RWMutex
+	subdomains     map[string]ClientSession // subdomain -> client session
+	httpServer     *http.Server
+	certFile       string
+	keyFile        string
+	baseDomain     string                 // Configurable base domain
+	httpPort       int                    // Configurable HTTP port
+	landingDir     string                 // Landing page directory
+	binDir         string                 // Bin directory for downloads
+	dashboardProxy *httputil.ReverseProxy // Proxy to internal dashboard
 }
 
 // HTTPRequest represents an HTTP request to be sent through the tunnel
@@ -145,10 +146,40 @@ func (p *HTTPProxyServer) Stop() error {
 	return nil
 }
 
+// SetDashboardTarget sets the internal port to proxy dashboard/api requests to
+func (p *HTTPProxyServer) SetDashboardTarget(port int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	targetURL := fmt.Sprintf("http://localhost:%d", port)
+	u, _ := url.Parse(targetURL)
+	p.dashboardProxy = httputil.NewSingleHostReverseProxy(u)
+
+	// Custom Director to ensure Host header is changed to the target host.
+	// Gin results in better behavior if Host is set correctly.
+	originalDirector := p.dashboardProxy.Director
+	p.dashboardProxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = u.Host
+	}
+}
+
 // handleRequest handles incoming HTTP requests and routes them to the appropriate client
 func (p *HTTPProxyServer) handleRequest(w http.ResponseWriter, r *http.Request) {
-	// Check if this is the main domain (landing page)
+	// Check if this is the main domain (landing page, dashboard, or API)
 	if p.isMainDomain(r.Host) {
+		// If it's a dashboard or API route, proxy to internal port if available
+		if strings.HasPrefix(r.URL.Path, "/dashboard") || strings.HasPrefix(r.URL.Path, "/api") {
+			p.mu.RLock()
+			proxy := p.dashboardProxy
+			p.mu.RUnlock()
+
+			if proxy != nil {
+				proxy.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		p.serveLandingPage(w, r)
 		return
 	}
@@ -179,12 +210,10 @@ func (p *HTTPProxyServer) handleRequest(w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
-	// Convert headers to map
+	// Convert headers to map, preserving all values by joining with commas
 	headers := make(map[string]string)
 	for key, values := range r.Header {
-		if len(values) > 0 {
-			headers[key] = values[0]
-		}
+		headers[key] = strings.Join(values, ", ")
 	}
 
 	// Create HTTP request for tunnel
@@ -233,6 +262,22 @@ func (p *HTTPProxyServer) isMainDomain(host string) bool {
 
 // serveLandingPage serves the landing page for the main domain
 func (p *HTTPProxyServer) serveLandingPage(w http.ResponseWriter, r *http.Request) {
+	// Skip landing page logic for dashboard and API routes so they fall through to the main Gin router
+	if strings.HasPrefix(r.URL.Path, "/dashboard") || strings.HasPrefix(r.URL.Path, "/api") {
+		return
+	}
+
+	// Add cache-busting for assets and HTML to fix rendering updates
+	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") ||
+		r.URL.Path == "/" || r.URL.Path == "/index.html" {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+	}
+
+	// Logging for debugging
+	log.Printf("[http] Main domain request: %s %s (Host: %s)", r.Method, r.URL.Path, r.Host)
+
 	// Handle downloads
 	if strings.HasPrefix(r.URL.Path, "/downloads/") {
 		filename := strings.TrimPrefix(r.URL.Path, "/downloads/")
@@ -260,6 +305,12 @@ func (p *HTTPProxyServer) serveLandingPage(w http.ResponseWriter, r *http.Reques
 		// Try to serve from landing directory
 		filePath := filepath.Join(p.landingDir, r.URL.Path)
 		if _, err := os.Stat(filePath); err == nil {
+			// Set MIME type based on extension for other files in landing dir
+			if strings.HasSuffix(filePath, ".css") {
+				w.Header().Set("Content-Type", "text/css")
+			} else if strings.HasSuffix(filePath, ".js") {
+				w.Header().Set("Content-Type", "application/javascript")
+			}
 			http.ServeFile(w, r, filePath)
 		} else {
 			http.NotFound(w, r)

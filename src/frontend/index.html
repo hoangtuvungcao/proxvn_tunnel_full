@@ -4,173 +4,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProxVN Dashboard - TrongDev</title>
+    <title>ProxVN Control Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body>
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
+<body data-theme="dark">
+    <div class="background-layer">
+        <div class="gradient gradient-primary"></div>
+        <div class="gradient gradient-accent"></div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="header animate-fade-in">
-            <div class="logo-section">
-                <div class="logo-icon">🚀</div>
+    <div class="app-shell">
+        <header class="topbar animate-fade-in">
+            <div class="brand">
+                <span class="brand-icon" aria-hidden="true">🚀</span>
                 <div>
-                    <h1 class="holographic-text">ProxVN Dashboard</h1>
-                    <p class="subtitle">by TrongDev • Real-time Tunnel Monitoring</p>
+                    <h1 class="brand-title">ProxVN Control Center</h1>
+                    <div style="display:flex; gap:1rem; margin-top:0.25rem;">
+                        <a href="users.html"
+                            style="color:var(--color-text-muted); text-decoration:none; font-size:0.875rem; font-weight:500;">👥
+                            Quản lý người dùng</a>
+                    </div>
                 </div>
             </div>
-            <div class="header-actions">
-                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <span class="icon">🌙</span>
-                </button>
-                <div class="connection-status" id="connectionStatus">
-                    <span class="pulse-dot"></span>
-                    <span>Connected</span>
+            <div class="topbar-actions">
+                <div class="connection-pill" id="connectionStatus" role="status" aria-live="polite">
+                    <span class="pill-indicator"></span>
+                    <span class="pill-label">Đang kết nối...</span>
                 </div>
+                <button class="ghost-btn" onclick="logout()" title="Đăng xuất">
+                    <span aria-hidden="true">🚪</span>
+                </button>
+                <button class="theme-toggle ghost-btn" id="themeToggle" type="button" aria-label="Chuyển theme">
+                    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+                    <span class="theme-toggle-label">Dark</span>
+                </button>
             </div>
         </header>
 
-        <!-- Stats Grid -->
-        <div class="stats-grid animate-slide-up">
-            <div class="stat-card card-3d" data-index="0">
-                <div class="card-glow"></div>
-                <div class="stat-icon gradient-1">🟢</div>
-                <div class="stat-content">
-                    <div class="stat-label">Tunnels Hoạt Động</div>
-                    <div class="stat-value" id="activeTunnels">
-                        <span class="counter" data-target="0">0</span>
+        <main class="layout-grid">
+            <section class="primary-column">
+                <section class="panel stats-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Tổng quan hoạt động</h2>
+                        <p class="panel-meta">Dữ liệu được cập nhật tự động mỗi 5 giây</p>
                     </div>
-                    <div class="stat-trend positive">
-                        <span>↑ 100%</span>
-                    </div>
-                </div>
-            </div>
+                    <div class="stats-grid">
+                        <article class="stat-card" data-accent="emerald">
+                            <header class="stat-card-header">
+                                <span class="stat-card-icon">🟢</span>
+                                <span class="stat-card-label">Tunnels hoạt động</span>
+                            </header>
+                            <div class="stat-card-value" id="activeTunnels">
+                                <span class="counter" data-target="0">0</span>
+                            </div>
+                            <footer class="stat-card-footer">
+                                <span class="trend-pill trend-positive">Realtime</span>
+                            </footer>
+                        </article>
 
-            <div class="stat-card card-3d" data-index="1">
-                <div class="card-glow"></div>
-                <div class="stat-icon gradient-2">📊</div>
-                <div class="stat-content">
-                    <div class="stat-label">Tổng Kết Nối</div>
-                    <div class="stat-value" id="totalConnections">
-                        <span class="counter" data-target="0">0</span>
-                    </div>
-                    <div class="stat-trend positive">
-                        <span>Live</span>
-                    </div>
-                </div>
-            </div>
+                        <article class="stat-card" data-accent="indigo">
+                            <header class="stat-card-header">
+                                <span class="stat-card-icon">📊</span>
+                                <span class="stat-card-label">Tổng kết nối</span>
+                            </header>
+                            <div class="stat-card-value" id="totalConnections">
+                                <span class="counter" data-target="0">0</span>
+                            </div>
+                            <footer class="stat-card-footer">
+                                <span class="trend-pill">Live feed</span>
+                            </footer>
+                        </article>
 
-            <div class="stat-card card-3d" data-index="2">
-                <div class="card-glow"></div>
-                <div class="stat-icon gradient-3">📈</div>
-                <div class="stat-content">
-                    <div class="stat-label">Upload Total</div>
-                    <div class="stat-value" id="totalUpload">
-                        <span class="data-size">0 MB</span>
-                    </div>
-                    <div class="stat-trend positive">
-                        <span id="uploadRate">0 KB/s</span>
-                    </div>
-                </div>
-            </div>
+                        <article class="stat-card" data-accent="cyan">
+                            <header class="stat-card-header">
+                                <span class="stat-card-icon">📈</span>
+                                <span class="stat-card-label">Tổng upload</span>
+                            </header>
+                            <div class="stat-card-value" id="totalUpload">
+                                <span class="data-size">0 MB</span>
+                            </div>
+                            <footer class="stat-card-footer">
+                                <span class="stat-hint">Bandwidth outbound</span>
+                            </footer>
+                        </article>
 
-            <div class="stat-card card-3d" data-index="3">
-                <div class="card-glow"></div>
-                <div class="stat-icon gradient-4">📉</div>
-                <div class="stat-content">
-                    <div class="stat-label">Download Total</div>
-                    <div class="stat-value" id="totalDownload">
-                        <span class="data-size">0 MB</span>
+                        <article class="stat-card" data-accent="purple">
+                            <header class="stat-card-header">
+                                <span class="stat-card-icon">📉</span>
+                                <span class="stat-card-label">Tổng download</span>
+                            </header>
+                            <div class="stat-card-value" id="totalDownload">
+                                <span class="data-size">0 MB</span>
+                            </div>
+                            <footer class="stat-card-footer">
+                                <span class="stat-hint">Bandwidth inbound</span>
+                            </footer>
+                        </article>
                     </div>
-                    <div class="stat-trend positive">
-                        <span id="downloadRate">0 KB/s</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+                </section>
 
-        <!-- Main Content -->
-        <div class="main-content animate-slide-up">
-            <!-- Tunnels Section -->
-            <section class="tunnels-section glass-card">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span class="title-icon">🔗</span>
-                        <span>Tunnels Đang Hoạt Động</span>
-                        <span class="pulse-indicator"></span>
-                    </h2>
-                    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
-                        <span class="icon">🔄</span>
-                        <span>Refresh</span>
-                    </button>
-                </div>
-
-                <div id="tunnelsList" class="tunnels-list">
-                    <!-- Tunnels will be loaded here -->
-                    <div class="loading-skeleton">
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                    </div>
-                </div>
-
-                <div id="noTunnels" class="no-tunnels" style="display: none;">
-                    <div class="no-tunnels-animation">
-                        <div class="empty-icon">🔌</div>
-                        <div class="empty-rings">
-                            <div class="ring ring-1"></div>
-                            <div class="ring ring-2"></div>
-                            <div class="ring ring-3"></div>
+                <section class="panel" aria-labelledby="tunnels-heading">
+                    <div class="panel-header">
+                        <h2 class="panel-title" id="tunnels-heading">Tunnels đang hoạt động</h2>
+                        <div class="panel-actions">
+                            <button class="refresh-btn" id="refreshBtn" type="button">
+                                <span class="icon" aria-hidden="true">↻</span>
+                                Làm mới
+                            </button>
                         </div>
                     </div>
-                    <h3>Chưa có tunnel nào</h3>
-                    <p>Khởi động ProxVN client để bắt đầu</p>
-                    <div class="code-snippet">
-                        <code>./proxvn-client 80</code>
+
+                    <div id="tunnelsList" class="tunnels-list" aria-live="polite">
+                        <div class="loading-state">
+                            <div class="loading-line"></div>
+                            <div class="loading-line"></div>
+                            <div class="loading-line"></div>
+                        </div>
                     </div>
-                </div>
+
+                    <div id="noTunnels" class="empty-state" role="note" style="display: none;">
+                        <div class="empty-illustration" aria-hidden="true">🔌</div>
+                        <h3>Chưa có tunnel nào được mở</h3>
+                        <p>Khởi chạy client và chạy lệnh bên dưới để tạo tunnel đầu tiên:</p>
+                        <code class="inline-code">proxvn --proto http 3000</code>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Lưu lượng theo thời gian thực</h2>
+                        <p class="panel-meta">Theo dõi upload/download trong 10 chu kỳ gần nhất</p>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="trafficChart" aria-label="Biểu đồ lưu lượng" role="img"></canvas>
+                    </div>
+                </section>
             </section>
 
-            <!-- Performance Chart -->
-            <section class="chart-section glass-card">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span class="title-icon">📊</span>
-                        <span>Hiệu Suất Real-time</span>
-                    </h2>
-                </div>
-                <div class="chart-container">
-                    <canvas id="trafficChart"></canvas>
-                </div>
-            </section>
-        </div>
+            <aside class="secondary-column">
+                <section class="panel quick-actions">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Hành động nhanh</h2>
+                        <p class="panel-meta">Quản lý ngay từ dashboard</p>
+                    </div>
+                    <ul class="action-list">
+                        <li class="action-item">
+                            <div>
+                                <h3>Thêm tunnel mới</h3>
+                                <p>Chạy client với tham số mong muốn, hệ thống sẽ tự đồng bộ.</p>
+                            </div>
+                            <code class="inline-code">proxvn --proto tcp 22</code>
+                        </li>
+                        <li class="action-item">
+                            <div>
+                                <h3>Chia sẻ file an toàn</h3>
+                                <p>Tạo chế độ chia sẻ có mật khẩu và ghi chú rõ quyền truy cập.</p>
+                            </div>
+                            <code class="inline-code">proxvn --file ~/Documents --pass share2025</code>
+                        </li>
+                        <li class="action-item">
+                            <div>
+                                <h3>Giới hạn băng thông</h3>
+                                <p>Điều chỉnh buffer và compression để tối ưu chi phí.</p>
+                            </div>
+                            <code class="inline-code">proxvn --buffer-size 65536 --compression</code>
+                        </li>
+                    </ul>
+                </section>
 
-        <!-- Footer -->
+                <section class="panel status-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Tình trạng hệ thống</h2>
+                        <p class="panel-meta">Thông tin kiểm tra sức khoẻ nhanh</p>
+                    </div>
+                    <dl class="status-list">
+                        <div class="status-item">
+                            <dt>API Endpoint</dt>
+                            <dd><code class="inline-code">/api/v1</code></dd>
+                        </div>
+                        <div class="status-item">
+                            <dt>Heartbeat</dt>
+                            <dd>2s • Auto reconnect</dd>
+                        </div>
+                        <div class="status-item">
+                            <dt>Bảo mật</dt>
+                            <dd>TLS 1.3 • JWT • Rate limit</dd>
+                        </div>
+                        <div class="status-item">
+                            <dt>Phiên bản</dt>
+                            <dd>v7.1 · 2026</dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
+        </main>
+
         <footer class="footer">
-            <p>© 2025 <strong>TrongDev</strong> • ProxVN • Made with 💜</p>
-            <div class="footer-links">
-                <a href="#" class="footer-link">API Docs</a>
-                <a href="#" class="footer-link">GitHub</a>
-                <a href="#" class="footer-link">Support</a>
-            </div>
+            <p>© 2026 ProxVN • Crafted by TrongDev</p>
+            <nav class="footer-links" aria-label="Liên kết quan trọng">
+                <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank" rel="noopener"
+                    class="footer-link">GitHub</a>
+                <a href="mailto:trong20843@gmail.com" class="footer-link">Email hỗ trợ</a>
+                <a href="https://t.me/proxvn" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            </nav>
         </footer>
     </div>
 
-    <!-- Toast Notifications -->
-    <div id="toastContainer" class="toast-container"></div>
+    <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-Tg7FmQupr1+xWrpDXHwGhKji6CLvVY0YZ+Iwgd0CQGl4No5AHYdo6J1j8P+0uu6L"
+        crossorigin="anonymous"></script>
+    <script src="js/app.js" defer></script>
 </body>
 
 </html>

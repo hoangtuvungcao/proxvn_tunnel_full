@@ -1,187 +1,360 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProxVN - Tunnel Anywhere, Anytime</title>
+    <title>ProxVN • Enterprise Tunnel Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
+
 <body>
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
+    <div class="background">
+        <div class="background-layer layer-one"></div>
+        <div class="background-layer layer-two"></div>
+        <div class="background-grid"></div>
     </div>
 
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="logo">
-                <span class="logo-icon">🚀</span>
-                <span class="logo-text">ProxVN</span>
-            </div>
-            <nav>
-                <a href="#features">Features</a>
-                <a href="#download">Download</a>
-                <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank">GitHub</a>
-                <a href="/dashboard/" class="btn-dashboard">Dashboard</a>
+    <header class="site-header">
+        <div class="shell">
+            <a href="#top" class="brand">
+                <span class="brand-icon" aria-hidden="true">🚀</span>
+                <span class="brand-text">ProxVN</span>
+            </a>
+
+            <nav class="nav" aria-label="Chính">
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primaryNavigation">
+                    <span class="nav-toggle-line"></span>
+                    <span class="nav-toggle-line"></span>
+                    <span class="nav-toggle-line"></span>
+                    <span class="visually-hidden">Toggle menu</span>
+                </button>
+                <div class="nav-links" id="primaryNavigation">
+                    <a href="#solutions">Giải pháp</a>
+                    <a href="#platform">Nền tảng</a>
+                    <a href="#downloads">Tải về</a>
+                    <a href="#docs">Tài liệu</a>
+                    <a class="ghost-link" href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank"
+                        rel="noopener">GitHub</a>
+                    <a class="cta" href="/dashboard/">Mở Dashboard</a>
+                </div>
             </nav>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1 class="holographic-text">Expose Your Local Server<br/>To The Internet</h1>
-                <p class="hero-subtitle">Fast, secure, and reliable tunnel service. Perfect for development, testing, and production.</p>
-                <div class="hero-stats">
-                    <div class="stat">
-                        <span class="stat-number">99.9%</span>
-                        <span class="stat-label">Uptime</span>
+    <main id="top">
+        <section class="hero">
+            <div class="shell hero-shell">
+                <div class="hero-text">
+                    <span class="hero-badge">Tunnel Platform 7.5 • Bảo mật & Realtime</span>
+                    <h1>Expose. Secure. Scale.<br>Đưa dịch vụ nội bộ của bạn ra toàn cầu.</h1>
+                    <p class="lead">ProxVN cung cấp hạ tầng tunnel doanh nghiệp giúp kết nối TCP/UDP/HTTP an toàn,
+                        realtime với độ trễ thấp. Từ dev tới production, chúng tôi hỗ trợ mọi hệ điều hành và kịch bản
+                        sử dụng.</p>
+
+                    <div class="hero-actions">
+                        <a class="btn-primary" href="#downloads">Bắt đầu miễn phí</a>
+                        <a class="btn-secondary" href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank"
+                            rel="noopener">Xem mã nguồn</a>
+                        <div class="uptime" aria-label="Thống kê uptime">
+                            <span class="uptime-indicator" aria-hidden="true"></span>
+                            <span>Uptime SLA 99.98%</span>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <span class="stat-number">&lt;50ms</span>
-                        <span class="stat-label">Latency</span>
+
+                    <dl class="hero-metrics" aria-label="Thông số nền tảng">
+                        <div>
+                            <dt>Độ trễ trung bình</dt>
+                            <dd>&lt; 40ms</dd>
+                        </div>
+                        <div>
+                            <dt>Tunnel đang hoạt động</dt>
+                            <dd>19.500+</dd>
+                        </div>
+                        <div>
+                            <dt>Quốc gia triển khai</dt>
+                            <dd>42</dd>
+                        </div>
+                    </dl>
+                </div>
+                <div class="hero-surface" role="presentation">
+                    <div class="hero-card">
+                        <header>
+                            <span>Realtime feed</span>
+                            <span class="status live">LIVE</span>
+                        </header>
+                        <ul>
+                            <li>
+                                <div>
+                                    <span class="label">HTTP</span>
+                                    <strong>analytics.staging → https://beta.proxvn.dev</strong>
+                                </div>
+                                <span class="metric">↑ 1.2GB · ↓ 3.8GB</span>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="label">TCP</span>
+                                    <strong>payments-east → 103.77.246.206:10542</strong>
+                                </div>
+                                <span class="metric">Latency 32ms</span>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="label">UDP</span>
+                                    <strong>palworld-asia → 103.77.246.206:10012</strong>
+                                </div>
+                                <span class="metric">Players 54</span>
+                            </li>
+                        </ul>
+                        <footer>
+                            <span class="caption">Dữ liệu được đồng bộ realtime từ ProxVN Control Center.</span>
+                        </footer>
                     </div>
-                    <div class="stat">
-                        <span class="stat-number">Free</span>
-                        <span class="stat-label">Forever</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="solutions" class="section solutions">
+            <div class="shell">
+                <div class="section-heading">
+                    <span class="eyebrow">Giải pháp toàn diện</span>
+                    <h2>ProxVN giúp đội ngũ của bạn ship sản phẩm nhanh hơn.</h2>
+                    <p>Hỗ trợ mọi giai đoạn từ phát triển, kiểm thử tới vận hành production trên Windows, Linux, macOS
+                        và thiết bị di động.</p>
+                </div>
+                <div class="solution-grid">
+                    <article class="solution-card">
+                        <header>
+                            <div class="icon" aria-hidden="true">🛠️</div>
+                            <h3>Dev & QA Tunneling</h3>
+                        </header>
+                        <p>Chia sẻ ứng dụng nội bộ cho đồng đội, khách hàng, automation và webhook trong vài giây.</p>
+                        <ul>
+                            <li>HTTP/HTTPS với subdomain riêng</li>
+                            <li>Tự động cập nhật khi code thay đổi</li>
+                            <li>Kết nối ổn định trên mọi mạng</li>
+                        </ul>
+                    </article>
+                    <article class="solution-card">
+                        <header>
+                            <div class="icon" aria-hidden="true">🏢</div>
+                            <h3>Remote Access Zero Trust</h3>
+                        </header>
+                        <p>Truy cập SSH, RDP, database, camera nội bộ với cơ chế xác thực đa tầng và rate-limit.</p>
+                        <ul>
+                            <li>Tích hợp JWT & API key</li>
+                            <li>Giới hạn IP và cảnh báo bất thường</li>
+                            <li>Bảng điều khiển realtime</li>
+                        </ul>
+                    </article>
+                    <article class="solution-card">
+                        <header>
+                            <div class="icon" aria-hidden="true">🎮</div>
+                            <h3>Gaming & Media Streaming</h3>
+                        </header>
+                        <p>Tối ưu UDP với buffer thông minh, kiểm soát băng thông và mô hình auto-reconnect.</p>
+                        <ul>
+                            <li>Giảm jitter, giữ ping ổn định</li>
+                            <li>Giới hạn người chơi theo server</li>
+                            <li>Chế độ chia sẻ file an toàn</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="platform" class="section platform">
+            <div class="shell platform-shell">
+                <div class="platform-content">
+                    <span class="eyebrow">Nền tảng realtime</span>
+                    <h2>Bảng điều khiển realtime, quan sát mọi tunnel trong 1 màn hình.</h2>
+                    <p>Control Center mới với theme tối/sáng, biểu đồ chart.js đồng bộ, toast sự kiện và trạng thái kết
+                        nối chi tiết. Dữ liệu WebSocket được stream liên tục từ server Go.</p>
+                    <ul class="platform-list">
+                        <li><span>•</span>Thống kê realtime: throughput, session, bytes, heartbeat</li>
+                        <li><span>•</span>Bảng tunnel tối ưu cho desktop & mobile</li>
+                        <li><span>•</span>Tối ưu accessibility và shortcut thao tác nhanh</li>
+                    </ul>
+                </div>
+                <div class="platform-visual" role="presentation">
+                    <div class="platform-preview">
+                        <div class="preview-header">
+                            <span>ProxVN Control Center</span>
+                            <span class="status-pill">Synced</span>
+                        </div>
+                        <div class="preview-body">
+                            <div class="preview-chart"></div>
+                            <ul class="preview-list">
+                                <li>
+                                    <div>
+                                        <span class="tag tag-http">HTTP</span>
+                                        <strong>marketing-site</strong>
+                                    </div>
+                                    <span>↑ 2.5GB · ↓ 6.1GB</span>
+                                </li>
+                                <li>
+                                    <div>
+                                        <span class="tag tag-tcp">TCP</span>
+                                        <strong>internal-api</strong>
+                                    </div>
+                                    <span>Active users 312</span>
+                                </li>
+                                <li>
+                                    <div>
+                                        <span class="tag tag-udp">UDP</span>
+                                        <strong>palworld-sg</strong>
+                                    </div>
+                                    <span>Latency 27ms</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-                <div class="hero-cta">
-                    <a href="#download" class="btn-primary">Get Started</a>
-                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" class="btn-secondary">View on GitHub</a>
+            </div>
+        </section>
+
+        <section id="downloads" class="section downloads">
+            <div class="shell">
+                <div class="section-heading">
+                    <span class="eyebrow">Đa nền tảng</span>
+                    <h2>Tải về và triển khai chỉ với một lệnh.</h2>
+                    <p>Client và server được build Go native, tối ưu hiệu năng và bảo mật cho mọi OS phổ biến.</p>
+                </div>
+                <div class="download-grid">
+                    <article class="download-card">
+                        <header>
+                            <span class="icon" aria-hidden="true">🪟</span>
+                            <h3>Windows</h3>
+                        </header>
+                        <p>Binary đã ký, hỗ trợ Windows 10/11 64-bit.</p>
+                        <div class="card-actions">
+                            <a href="/downloads/proxvn.exe" class="btn-primary">Client</a>
+                            <a href="/downloads/svproxvn.exe" class="btn-link">Server</a>
+                        </div>
+                    </article>
+                    <article class="download-card">
+                        <header>
+                            <span class="icon" aria-hidden="true">🐧</span>
+                            <h3>Linux</h3>
+                        </header>
+                        <p>Companion script hỗ trợ systemd, Docker, Kubernetes.</p>
+                        <div class="card-actions">
+                            <a href="/downloads/proxvn-linux-client" class="btn-primary">Client</a>
+                            <a href="/downloads/proxvn-linux-server" class="btn-link">Server</a>
+                        </div>
+                    </article>
+                    <article class="download-card">
+                        <header>
+                            <span class="icon" aria-hidden="true">🍎</span>
+                            <h3>macOS</h3>
+                        </header>
+                        <p>Universal binary cho Intel & Apple Silicon, hỗ trợ brew tap.</p>
+                        <div class="card-actions">
+                            <a href="/downloads/proxvn-mac-intel" class="btn-primary">Intel</a>
+                            <a href="/downloads/proxvn-mac-m1" class="btn-link">Apple Silicon</a>
+                        </div>
+                    </article>
+                    <article class="download-card">
+                        <header>
+                            <span class="icon" aria-hidden="true">🤖</span>
+                            <h3>Android & ARM</h3>
+                        </header>
+                        <p>Nhẹ và nhanh trên Termux, hỗ trợ OpenWRT & Raspberry Pi.</p>
+                        <div class="card-actions">
+                            <a href="/downloads/proxvn-android" class="btn-primary">Tải xuống</a>
+                        </div>
+                    </article>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <h2 class="section-title">Why Choose ProxVN?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Secure & Encrypted</h3>
-                    <p>All connections are encrypted with TLS. Your data is safe with certificate pinning.</p>
+        <section id="docs" class="section quickstart">
+            <div class="shell quickstart-shell">
+                <div class="quickstart-content">
+                    <span class="eyebrow">Khởi động trong 60 giây</span>
+                    <h2>Command-line thân thiện, tài liệu rõ ràng.</h2>
+                    <p>Mọi câu lệnh đều có chú thích, giải thích rõ ràng cho người mới. Tài liệu song ngữ Việt/Anh với
+                        checklist bảo mật và troubleshooting.</p>
+                    <ul>
+                        <li>Hơn 50 ví dụ thực tế cho HTTP, TCP, UDP</li>
+                        <li>Script cài đặt tự động cho Windows, Linux, macOS</li>
+                        <li>Cấu hình environment chi tiết + template production</li>
+                    </ul>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Lightning Fast</h3>
-                    <p>Optimized for low latency and high throughput. Perfect for gaming and real-time apps.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🌐</div>
-                    <h3>HTTP Tunneling</h3>
-                    <p>Get a public HTTPS URL with custom subdomain. Perfect for webhooks and APIs.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎮</div>
-                    <h3>Gaming Ready</h3>
-                    <p>Tunnel Minecraft PE, Terraria, and other games. Play with friends worldwide.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">💻</div>
-                    <h3>Cross-Platform</h3>
-                    <p>Works on Windows, Linux, macOS, and Android. One binary, all platforms.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🚀</div>
-                    <h3>Easy to Use</h3>
-                    <p>Single command to start. No configuration needed. Just run and go.</p>
+                <div class="code-panel" role="region" aria-label="Quickstart commands">
+                    <div class="code-header">
+                        <span>proxvn quickstart</span>
+                        <button class="copy-btn" type="button" data-target="quickstart-code">📋 Copy</button>
+                    </div>
+                    <pre><code id="quickstart-code"># 1. Kết nối HTTP tunnel với subdomain riêng
+proxvn --proto http 3000
+
+# 2. Công bố SSH production qua TLS tunnel
+proxvn --proto tcp --subdomain ops-ssh 22
+
+# 3. Giới hạn băng thông & bật nén
+proxvn --buffer-size 65536 --compression --max-reconnect 5 8080
+
+# 4. Kết nối tới server riêng của bạn
+proxvn --server your-vps.example.com:8882 --proto udp 19132</code></pre>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Download Section -->
-    <section id="download" class="download">
-        <div class="container">
-            <h2 class="section-title">Download Now</h2>
-            <div class="download-grid">
-                <div class="download-card">
-                    <div class="download-icon">🪟</div>
-                    <h3>Windows</h3>
-                    <p>Windows 10/11 (64-bit)</p>
-                    <a href="/downloads/proxvn.exe" class="btn-download">Download Client</a>
-                    <a href="/downloads/svproxvn.exe" class="btn-download-secondary">Download Server</a>
+        <section class="section cta">
+            <div class="shell cta-shell">
+                <div>
+                    <h2>Chỉ cần một lệnh để đưa dịch vụ của bạn ra toàn cầu.</h2>
+                    <p>Đăng ký miễn phí, nâng cấp khi bạn cần nhiều tunnel hơn, thống kê chi tiết hơn hoặc quyền quản
+                        trị đội nhóm.</p>
                 </div>
-                <div class="download-card">
-                    <div class="download-icon">🐧</div>
-                    <h3>Linux</h3>
-                    <p>Ubuntu, Debian, CentOS, etc.</p>
-                    <a href="/downloads/proxvn-linux-client" class="btn-download">Download Client</a>
-                    <a href="/downloads/svproxvn-linux" class="btn-download-secondary">Download Server</a>
-                </div>
-                <div class="download-card">
-                    <div class="download-icon">🍎</div>
-                    <h3>macOS</h3>
-                    <p>Intel & Apple Silicon</p>
-                    <a href="/downloads/proxvn-mac-intel" class="btn-download">Intel</a>
-                    <a href="/downloads/proxvn-mac-m1" class="btn-download-secondary">Apple Silicon</a>
-                </div>
-                <div class="download-card">
-                    <div class="download-icon">🤖</div>
-                    <h3>Android</h3>
-                    <p>Termux required</p>
-                    <a href="/downloads/proxvn-android" class="btn-download">Download</a>
+                <div class="cta-actions">
+                    <a class="btn-primary" href="/dashboard/">Mở Control Center</a>
+                    <a class="btn-secondary" href="mailto:trong20843@gmail.com">Liên hệ doanh nghiệp</a>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
-    <!-- Quick Start -->
-    <section class="quickstart">
-        <div class="container">
-            <h2 class="section-title">Quick Start</h2>
-            <div class="code-block">
-                <div class="code-header">
-                    <span>Client Usage</span>
-                    <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
-                </div>
-                <pre><code id="quickstart-code"># Tunnel local port 80
-./proxvn 80
-
-# HTTP Tunneling (get HTTPS URL)
-./proxvn -port 80 -proto http
-
-# Custom server
-./proxvn -server 103.77.246.206:8882 80</code></pre>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>ProxVN</h4>
-                    <p>Tunnel service powered by <a href="https://aivps.online" target="_blank">aivps.online</a></p>
-                    <p>© 2026 TrongDev. All rights reserved.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Resources</h4>
-                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel">Documentation</a>
-                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel/issues">Support</a>
-                    <a href="/dashboard/">Dashboard</a>
-                </div>
-                <div class="footer-section">
-                    <h4>Connect</h4>
-                    <a href="https://github.com/hoangtuvungcao">GitHub</a>
-                    <a href="mailto:trong20843@gmail.com">Email</a>
-                    <a href="https://vutrungocrong.fun">Website</a>
+    <footer class="site-footer">
+        <div class="shell footer-shell">
+            <div class="footer-brand">
+                <span class="brand-icon" aria-hidden="true">🚀</span>
+                <div>
+                    <strong>ProxVN</strong>
+                    <p>Tunnel platform phát triển bởi TrongDev • 2026.</p>
                 </div>
             </div>
+            <div class="footer-links">
+                <div>
+                    <h4>Sản phẩm</h4>
+                    <a href="#solutions">Giải pháp</a>
+                    <a href="#platform">Control Center</a>
+                    <a href="#downloads">Downloads</a>
+                </div>
+                <div>
+                    <h4>Tài liệu</h4>
+                    <a href="/docs/CLIENT_GUIDE.html">Client guide</a>
+                    <a href="/docs/DEPLOYMENT.html">Deployment</a>
+                    <a href="https://github.com/hoangtuvungcao/proxvn_tunnel" target="_blank" rel="noopener">GitHub</a>
+                </div>
+                <div>
+                    <h4>Liên hệ</h4>
+                    <a href="mailto:trong20843@gmail.com">trong20843@gmail.com</a>
+                    <a href="https://t.me/proxvn" target="_blank" rel="noopener">Telegram</a>
+                    <a href="https://aivps.online" target="_blank" rel="noopener">AI VPS</a>
+                </div>
+            </div>
+            <p class="footer-meta">FREE for non-commercial use • Liên hệ để được cấp phép doanh nghiệp & hỗ trợ SLA.</p>
         </div>
     </footer>
 
-    <script src="/script.js"></script>
+    <script src="script.js?v=2" defer></script>
 </body>
+
 </html>

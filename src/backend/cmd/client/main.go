@@ -30,10 +30,10 @@ const (
 	defaultServerAddr  = "103.77.246.206:8882"
 	defaultLocalHost   = "localhost"
 	defaultLocalPort   = 80
-	heartbeatInterval  = 20 * time.Second
+	heartbeatInterval  = 2 * time.Second // Faster detection
 	backendIdleTimeout = 5 * time.Second
 	backendIdleRetries = 3
-	udpControlInterval = 3 * time.Second
+	udpControlInterval = 2 * time.Second
 	udpControlTimeout  = 6 * time.Second
 )
 
@@ -48,17 +48,18 @@ const (
 )
 
 type client struct {
-	serverAddr      string
-	localAddr       string
-	key             string
-	clientID        string
-	remotePort      int
-	publicHost      string
-	protocol        string
-	subdomain       string // Subdomain assigned by server for HTTP mode
-	baseDomain      string // Base domain assigned by server for HTTP mode
-	certFingerprint string // Optional: Server certificate fingerprint for pinning
-	uiEnabled       bool
+	serverAddr         string
+	localAddr          string
+	key                string
+	clientID           string
+	remotePort         int
+	publicHost         string
+	protocol           string
+	subdomain          string // Subdomain assigned by server for HTTP mode
+	baseDomain         string // Base domain assigned by server for HTTP mode
+	certFingerprint    string // Optional: Server certificate fingerprint for pinning
+	insecureSkipVerify bool   // Skip TLS certificate verification
+	uiEnabled          bool
 
 	// Control connection
 	control        net.Conn
@@ -161,6 +162,7 @@ func main() {
   • HTTP Tunnel:  Nhận subdomain HTTPS tự động (https://abc.domain.com)
   • TCP Tunnel:   Public bất kỳ service TCP nào (Web, SSH, RDP, Database...)
   • UDP Tunnel:   Cho game server (Minecraft PE, CS:GO, Palworld...)
+  • File Sharing: Chia sẻ file/folder như Windows Network Share
   • TLS Security: Mã hóa end-to-end cho tất cả kết nối
   • Auto Reconnect: Tự động kết nối lại khi mất mạng
 
@@ -191,6 +193,12 @@ func main() {
   proxvn --proto udp 7777             # Palworld server
   → Kết quả: 103.77.246.206:10000
 
+▶ File Sharing - Chia Sẻ File/Folder:
+  proxvn --file /home/user/Documents --pass matkhau123
+  proxvn --file "C:\\Projects" --pass abc123         # Windows
+  proxvn --file ~/Downloads --pass secret --permissions r  # Read-only
+  → Kết quả: Mount như ổ đĩa mạng (Z:\\) hoặc truy cập qua web
+
 ▶ Kết nối tới VPS riêng:
   proxvn --server YOUR_VPS_IP:8882 --proto http 80
 
@@ -212,10 +220,34 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 	proto := flag.String("proto", "tcp", "Protocol: tcp, udp, or http")
 	UI := flag.Bool("ui", true, "Enable TUI (disable with --ui=false)")
 	certPin := flag.String("cert-pin", "", "Optional: Server certificate SHA256 fingerprint for pinning (hex format)")
+	insecure := flag.Bool("insecure", false, "Skip TLS certificate verification (for testing with localhost)")
+
+	// File sharing flags
+	fileFlag := flag.String("file", "", "Đường dẫn file/folder cần chia sẻ (vd: /home/user/docs, C:\\\\Users\\\\Admin\\\\Documents)")
+	userFlag := flag.String("user", "proxvn", "Username để truy cập file share (mặc định: proxvn)")
+	passFlag := flag.String("pass", "", "Mật khẩu để truy cập file share (bắt buộc khi dùng --file)")
+	permsFlag := flag.String("permissions", "rw", "Quyền hạn: r (chỉ đọc), rw (đọc-ghi), rwx (đầy đủ)")
+
 	flag.Parse()
 
 	log.SetOutput(os.Stderr)
 	log.SetFlags(log.LstdFlags)
+
+	// Check if file sharing mode
+	if *fileFlag != "" {
+		if *passFlag == "" {
+			log.Fatal("❌ Lỗi: --pass bắt buộc khi dùng --file")
+		}
+		// Trim spaces to prevent auth errors
+		username := strings.TrimSpace(*userFlag)
+		password := strings.TrimSpace(*passFlag)
+		perms := strings.TrimSpace(*permsFlag)
+
+		if err := runFileShareMode(*fileFlag, username, password, perms, *serverAddr, *insecure); err != nil {
+			log.Fatalf("❌ File sharing lỗi: %v", err)
+		}
+		return
+	}
 
 	clientID := strings.TrimSpace(*id)
 	if clientID == "" {
@@ -277,13 +309,13 @@ func (c *client) run() error {
 	// ✅ FIX: Exponential backoff để tránh spam reconnect
 	backoff := 3 * time.Second
 	maxBackoff := 5 * time.Minute
-	
+
 	for {
 		if err := c.connectControl(); err != nil {
 			log.Printf("[client] kết nối control thất bại: %v", err)
 			log.Printf("[client] retry sau %v...", backoff)
 			time.Sleep(backoff)
-			
+
 			// ✅ Exponential backoff: double mỗi lần fail, max 5 phút
 			backoff *= 2
 			if backoff > maxBackoff {
@@ -291,10 +323,10 @@ func (c *client) run() error {
 			}
 			continue
 		}
-		
+
 		// ✅ Reset backoff khi kết nối thành công
 		backoff = 3 * time.Second
-		
+
 		if err := c.receiveLoop(); err != nil {
 			log.Printf("[client] control lỗi: %v", err)
 		}
@@ -302,7 +334,7 @@ func (c *client) run() error {
 		if atomic.LoadUint32(&c.exitFlag) == 1 {
 			return nil
 		}
-		
+
 		log.Printf("[client] thử reconnect control...")
 		time.Sleep(backoff)
 	}
@@ -364,12 +396,12 @@ func (c *client) connectControl() error {
 		Target:   c.localAddr,
 		Protocol: c.protocol,
 	}
-	
+
 	// If reconnecting and we had a port before, request the same port
 	if c.remotePort > 0 {
 		register.RequestedPort = c.remotePort
 	}
-	
+
 	if err := c.enc.Encode(register); err != nil {
 		return err
 	}

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ProxVN Dashboard - Quản lý tunnels">
+    <title>ProxVN Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --bg-light: #f7fafc;
+            --bg-dark: #1a202c;
+            --card-light: #ffffff;
+            --card-dark: #2d3748;
+            --text-light: #2d3748;
+            --text-dark: #e2e8f0;
+            --text-secondary-light: #718096;
+            --text-secondary-dark: #a0aec0;
+            --border-light: #e2e8f0;
+            --border-dark: #4a5568;
+            --success: #48bb78;
+            --danger: #f56565;
+            --warning: #ed8936;
+            --info: #4299e1;
+        }
+
+        [data-theme="light"] {
+            --bg: var(--bg-light);
+            --card-bg: var(--card-light);
+            --text: var(--text-light);
+            --text-secondary: var(--text-secondary-light);
+            --border: var(--border-light);
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--bg-dark);
+            --card-bg: var(--card-dark);
+            --text: var(--text-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --border: var(--border-dark);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-icon {
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-change {
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* Tunnels Table */
+        .section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(72, 187, 120, 0.2);
+            color: var(--success);
+        }
+
+        .status-inactive {
+            background: rgba(160, 174, 192, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 40px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .table-container {
+                font-size: 14px;
+            }
+
+            th,
+            td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="light">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span>🚀</span>
+                <span>ProxVN Dashboard</span>
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">🌙</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Active Tunnels</span>
+                    <span class="stat-icon">🔌</span>
+                </div>
+                <div class="stat-value" id="activeTunnels">-</div>
+                <div class="stat-change positive">+12% từ hôm qua</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Connections</span>
+                    <span class="stat-icon">📊</span>
+                </div>
+                <div class="stat-value" id="totalConnections">-</div>
+                <div class="stat-change positive">+8% từ hôm qua</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Bandwidth</span>
+                    <span class="stat-icon">📈</span>
+                </div>
+                <div class="stat-value" id="bandwidth">-</div>
+                <div class="stat-change">Real-time</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Active Users</span>
+                    <span class="stat-icon">👥</span>
+                </div>
+                <div class="stat-value" id="activeUsers">-</div>
+                <div class="stat-change positive">+5 người dùng mới</div>
+            </div>
+        </div>
+
+        <!-- Tunnels Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Active Tunnels</h2>
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+            </div>
+
+            <div class="table-container" id="tunnelsTable">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', newTheme);
+            document.getElementById('themeToggle').textContent = newTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            loadData();
+        });
+
+        // Load Data
+        async function loadData() {
+            try {
+                // Load metrics
+                const metricsRes = await fetch('/api/metrics');
+                const metrics = await metricsRes.json();
+
+                if (metrics.success) {
+                    document.getElementById('activeTunnels').textContent = metrics.data.active_tunnels || 0;
+                    document.getElementById('totalConnections').textContent = metrics.data.total_connections || 0;
+                    document.getElementById('activeUsers').textContent = metrics.data.active_users || 0;
+
+                    const totalBytes = (metrics.data.total_bytes_up || 0) + (metrics.data.total_bytes_down || 0);
+                    document.getElementById('bandwidth').textContent = formatBytes(totalBytes);
+                }
+
+                // Load tunnels
+                const tunnelsRes = await fetch('/api/tunnels');
+                const tunnels = await tunnelsRes.json();
+
+                displayTunnels(tunnels.data || []);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('tunnelsTable').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lỗi tải dữ liệu</p></div>';
+            }
+        }
+
+        function displayTunnels(tunnels) {
+            const container = document.getElementById('tunnelsTable');
+
+            if (tunnels.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Chưa có tunnel nào</p></div>';
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Protocol</th>
+                            <th>Local</th>
+                            <th>Public</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tunnels.map(tunnel => `
+                            <tr>
+                                <td><strong>${tunnel.name}</strong></td>
+                                <td><span style="text-transform: uppercase">${tunnel.protocol}</span></td>
+                                <td>${tunnel.local_host}:${tunnel.local_port}</td>
+                                <td>${tunnel.public_port}</td>
+                                <td><span class="status-badge status-${tunnel.status}">${tunnel.status}</span></td>
+                                <td>${new Date(tunnel.created_at).toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function refreshData() {
+            document.getElementById('tunnelsTable').innerHTML = '<div class="spinner"></div>';
+            loadData();
+        }
+
+        // Auto refresh every 10 seconds
+        setInterval(loadData, 10000);
+    </script>
+</body>
+
+</html>

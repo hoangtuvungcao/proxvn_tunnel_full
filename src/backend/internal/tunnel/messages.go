@@ -7,23 +7,23 @@ import (
 	"io"
 )
 
-const Version = "4.0.0"
+const Version = "7.5"
 
 // Message is the control-plane payload exchanged between tunnel peers.
 type Message struct {
-	Type       string `json:"type"`
-	Key        string `json:"key,omitempty"`
-	ClientID   string `json:"client_id,omitempty"`
-	RemotePort int    `json:"remote_port,omitempty"`
-	RequestedPort int `json:"requested_port,omitempty"` // Port client wants to reuse on reconnect
-	Target     string `json:"target,omitempty"`
-	ID         string `json:"id,omitempty"`
-	Error      string `json:"error,omitempty"`
-	Version    string `json:"version,omitempty"`
-	Protocol   string `json:"protocol,omitempty"`
-	RemoteAddr string `json:"remote_addr,omitempty"`
-	Payload    string `json:"payload,omitempty"`
-	
+	Type          string `json:"type"`
+	Key           string `json:"key,omitempty"`
+	ClientID      string `json:"client_id,omitempty"`
+	RemotePort    int    `json:"remote_port,omitempty"`
+	RequestedPort int    `json:"requested_port,omitempty"` // Port client wants to reuse on reconnect
+	Target        string `json:"target,omitempty"`
+	ID            string `json:"id,omitempty"`
+	Error         string `json:"error,omitempty"`
+	Version       string `json:"version,omitempty"`
+	Protocol      string `json:"protocol,omitempty"`
+	RemoteAddr    string `json:"remote_addr,omitempty"`
+	Payload       string `json:"payload,omitempty"`
+
 	// HTTP tunneling fields
 	Subdomain  string            `json:"subdomain,omitempty"`
 	Method     string            `json:"method,omitempty"`
@@ -31,10 +31,10 @@ type Message struct {
 	Headers    map[string]string `json:"headers,omitempty"`
 	Body       []byte            `json:"body,omitempty"`
 	StatusCode int               `json:"status_code,omitempty"`
-	
+
 	// Security
-	UDPSecret string `json:"udp_secret,omitempty"` // Base64 encoded AES key
-	BaseDomain string            `json:"base_domain,omitempty"`  // Base domain for HTTP (e.g. vutrungocrong.fun)
+	UDPSecret  string `json:"udp_secret,omitempty"`  // Base64 encoded AES key
+	BaseDomain string `json:"base_domain,omitempty"` // Base domain for HTTP (e.g. vutrungocrong.fun)
 }
 
 // NewEncoder returns a JSON encoder with HTML escaping disabled.

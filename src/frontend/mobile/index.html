@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1120">
+    <title>ProxVN Mobile Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-theme="dark">
+    <header class="app-header" id="appHeader">
+        <div class="brand">
+            <span class="brand-icon" aria-hidden="true">🛰️</span>
+            <div class="brand-copy">
+                <h1 class="brand-title">ProxVN Mobile</h1>
+                <p class="brand-subtitle">Theo dõi tunnels mọi lúc, mọi nơi</p>
+            </div>
+        </div>
+        <button class="ghost-btn" id="themeToggle" type="button" aria-label="Chuyển giao diện">
+            <span class="ghost-btn-icon" aria-hidden="true">🌙</span>
+        </button>
+    </header>
+
+    <main class="app-main">
+        <section class="connection-card" role="status" aria-live="polite">
+            <div class="connection-pill" id="connectionStatus">
+                <span class="connection-indicator"></span>
+                <div>
+                    <p class="connection-label">Trạng thái</p>
+                    <p class="connection-value">Đang kết nối...</p>
+                </div>
+            </div>
+            <button class="primary-btn" id="manualRefresh" type="button">Làm mới</button>
+        </section>
+
+        <section class="stats-grid" aria-label="Thống kê nhanh">
+            <article class="stat-card" data-accent="green">
+                <p class="stat-label">Tunnel hoạt động</p>
+                <p class="stat-value" id="statActiveTunnels">0</p>
+                <span class="stat-meta">Realtime</span>
+            </article>
+            <article class="stat-card" data-accent="indigo">
+                <p class="stat-label">Tổng kết nối</p>
+                <p class="stat-value" id="statTotalConnections">0</p>
+                <span class="stat-meta">All time</span>
+            </article>
+            <article class="stat-card" data-accent="cyan">
+                <p class="stat-label">Upload</p>
+                <p class="stat-value" id="statTotalUpload">0 B</p>
+                <span class="stat-meta">Lifetime</span>
+            </article>
+            <article class="stat-card" data-accent="purple">
+                <p class="stat-label">Download</p>
+                <p class="stat-value" id="statTotalDownload">0 B</p>
+                <span class="stat-meta">Lifetime</span>
+            </article>
+        </section>
+
+        <section class="list-panel" aria-labelledby="tunnelsHeading">
+            <div class="panel-header">
+                <h2 class="panel-title" id="tunnelsHeading">Tunnels đang chạy</h2>
+                <span class="panel-meta" id="lastUpdated">Đang tải...</span>
+            </div>
+            <div id="tunnelsList" class="tunnels-list" aria-live="polite">
+                <div class="skeleton-list">
+                    <div class="skeleton-item"></div>
+                    <div class="skeleton-item"></div>
+                </div>
+            </div>
+            <div id="emptyState" class="empty-state" hidden>
+                <span class="empty-icon" aria-hidden="true">🔌</span>
+                <p>Chưa có tunnel nào hoạt động.</p>
+                <code class="inline-code">proxvn --proto http 3000</code>
+            </div>
+        </section>
+
+        <section class="quick-actions" aria-labelledby="quickActionsHeading">
+            <h2 class="panel-title" id="quickActionsHeading">Hành động nhanh</h2>
+            <div class="action-grid">
+                <button class="action-card" data-action="http">
+                    <span class="action-icon" aria-hidden="true">🌐</span>
+                    <span class="action-title">HTTP Tunnel</span>
+                    <span class="action-subtitle">proxvn --proto http 3000</span>
+                </button>
+                <button class="action-card" data-action="tcp">
+                    <span class="action-icon" aria-hidden="true">🛡️</span>
+                    <span class="action-title">SSH bảo mật</span>
+                    <span class="action-subtitle">proxvn --proto tcp 22</span>
+                </button>
+                <button class="action-card" data-action="udp">
+                    <span class="action-icon" aria-hidden="true">🎮</span>
+                    <span class="action-title">Game UDP</span>
+                    <span class="action-subtitle">proxvn --proto udp 19132</span>
+                </button>
+                <button class="action-card" data-action="share">
+                    <span class="action-icon" aria-hidden="true">📁</span>
+                    <span class="action-title">Chia sẻ file</span>
+                    <span class="action-subtitle">proxvn --file ~/Docs --pass secure</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>© 2026 ProxVN • Mobile Control</p>
+        <nav class="footer-links" aria-label="Liên kết hỗ trợ">
+            <a class="footer-link" href="../index.html">Dashboard</a>
+            <a class="footer-link" href="../landing/index.html">Landing</a>
+            <a class="footer-link" href="mailto:trong20843@gmail.com">Email</a>
+        </nav>
+    </footer>
+
+    <dialog id="actionDialog" class="action-dialog">
+        <div class="dialog-content">
+            <header class="dialog-header">
+                <h2 id="dialogTitle">Lệnh mẫu</h2>
+                <button class="dialog-close" type="button" id="dialogClose" aria-label="Đóng">✕</button>
+            </header>
+            <p id="dialogDescription" class="dialog-description">Sao chép lệnh và chạy trên client của bạn.</p>
+            <pre class="dialog-code" id="dialogCode" tabindex="0"></pre>
+            <div class="dialog-actions">
+                <button class="ghost-btn" id="copyAction" type="button">Copy</button>
+            </div>
+        </div>
+    </dialog>
+
+    <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
+
+    <script src="app.js" type="module"></script>
+</body>
+
+</html>

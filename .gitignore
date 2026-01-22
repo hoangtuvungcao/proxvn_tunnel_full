@@ -1,62 +1,32 @@
-# Binaries and executables
-*.exe
-*.dll
-*.so
-*.dylib
-proxvn
-proxvn-*
-svproxvn
-svproxvn-*
+# Binaries
+*.exe~
+*-test.exe
 
-# Build directories
+# Certificates
+*.crt
+*.key
+*.pem
 
+# Environment
+.env
+.env.local
 
-# Go specific
-*.test
-*.prof
-go.work
+# Logs
+*.log
 
-# IDE and editor files
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.DS_Store
 
-# OS files
-Thumbs.db
-desktop.ini
-*.log
+# Temporary
+temp/
+tmp/
 
-# Environment and config files
-.env
-*.env
-*.local
-
-# SSL certificates (keep templates, ignore actual certs)
-*.crt
-*.key
-*.pem
-*.p12
-*.pfx
-!example.crt
-!example.key
-
-# Temporary files
-*.tmp
-*.temp
-*.cache
-
-# Node modules (if any)
-node_modules/
-
-# Compiled binaries from client/server builds
-client/*.exe
-client/proxvn
-client/proxvn-*
-server-windows/*.exe
-server-linux/svproxvn
-server-linux/svproxvn-*
-
-bin/
+# Build artifacts
+bin/*.zip

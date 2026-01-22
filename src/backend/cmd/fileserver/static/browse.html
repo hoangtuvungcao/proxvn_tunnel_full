@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxVN File Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #48bb78;
+            --danger: #f56565;
+            --warning: #ed8936;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            background: var(--card-bg);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb span {
+            color: var(--text-light);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: var(--card-bg);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* File Grid */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .file-item {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .file-item {
+            position: relative;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-item:hover .delete-btn,
+        .file-item:hover .edit-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover,
+        .edit-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .delete-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 8px;
+            right: 40px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-item:hover .download-btn {
+            opacity: 1;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.1);
+            background: var(--success);
+            color: white;
+        }
+
+        .file-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            background: var(--card-bg);
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+            display: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.02);
+        }
+
+        .upload-zone.active {
+            display: block;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--success);
+            background: rgba(72, 187, 120, 0.05);
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            transition: transform 0.3s;
+        }
+
+        .upload-zone:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+
+        /* Editor Modal Specifics */
+        #editorModal .modal-content {
+            max-width: 1100px;
+            width: 95%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .editor-container {
+            display: flex;
+            flex-grow: 1;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .line-numbers {
+            width: 60px;
+            padding: 12px 0;
+            background: #f1f3f5;
+            border-right: 1px solid var(--border);
+            color: #adb5bd;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            text-align: right;
+            padding-right: 12px;
+            user-select: none;
+            overflow: hidden;
+            line-height: 1.5;
+            white-space: pre;
+        }
+
+        #editorTextarea {
+            flex-grow: 1;
+            width: 100%;
+            padding: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            border: none;
+            resize: none;
+            line-height: 1.5;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+            background: transparent;
+            color: #212529;
+            outline: none;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            color: var(--text-light);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .file-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+
+            .toolbar {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .toolbar-left {
+                width: 100%;
+                flex-direction: column;
+            }
+        }
+
+        /* Preview Modal */
+        #previewModal .modal-content {
+            max-width: 1000px;
+            width: 95%;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #previewModal .modal-header {
+            padding: 16px 24px;
+            background: #1a1a1a;
+            color: #fff;
+            margin-bottom: 0;
+        }
+
+        #previewModal .close-modal {
+            color: #fff;
+        }
+
+        .preview-body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            max-height: 80vh;
+            overflow: auto;
+            background: #0d0d0d;
+        }
+
+        .preview-body img {
+            max-width: 100%;
+            max-height: 80vh;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .preview-body video {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+
+        .preview-body iframe {
+            width: 100%;
+            height: 80vh;
+            border: none;
+        }
+
+        .preview-body audio {
+            width: 80%;
+            margin: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📁</div>
+                <span>ProxVN File Browser</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showUploadZone()">📤 Upload</button>
+                <button class="btn btn-secondary" onclick="logout()">🚪 Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="breadcrumb"></div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-primary" onclick="showCreateFolderModal()">➕ Tạo thư mục</button>
+                <button class="btn btn-primary" onclick="showCreateFileModal()">📄 Tạo file</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()"> Tải thư
+                    mục</button>
+                <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+                <button class="btn btn-secondary" onclick="refreshFiles()">🔄 Làm mới</button>
+            </div>
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📤</div>
+            <h3>Kéo thả file vào đây hoặc click để chọn</h3>
+            <p style="color: var(--text-light); margin-top: 8px;">Hỗ trợ nhiều files và kéo thả thư mục</p>
+            <input type="file" id="fileInput" multiple style="display: none;">
+            <div style="margin-top: 24px;">
+                <button class="btn btn-secondary" onclick="event.stopPropagation(); hideUploadZone()">Đóng lại</button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang tải...</p>
+        </div>
+
+        <!-- File Grid -->
+        <div class="file-grid" id="fileGrid" style="display: none;"></div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">📂</div>
+            <p class="empty-text">Thư mục trống</p>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal" id="createFolderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Tạo thư mục mới</h2>
+                <button class="close-modal" onclick="hideCreateFolderModal()">×</button>
+            </div>
+            <input type="text" id="folderName" placeholder="Tên thư mục" onkeyup="handleEnter(event, createFolder)">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideCreateFolderModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="createFolder()">Tạo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create File Modal -->
+    <div class="modal" id="createFileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Tạo file mới</h2>
+                <button class="close-modal" onclick="hideCreateFileModal()">×</button>
+            </div>
+            <input type="text" id="fileName" placeholder="Tên file (vd: note.txt)"
+                onkeyup="handleEnter(event, createFile)">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideCreateFileModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="createFile()">Tạo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Xác nhận xóa</h2>
+                <button class="close-modal" onclick="hideDeleteConfirmModal()">×</button>
+            </div>
+            <p id="deleteConfirmText">Bạn có chắc chắn muốn xóa?</p>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="hideDeleteConfirmModal()">Hủy</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn"
+                    style="background: var(--danger); color: white;">Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div class="modal" id="editorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="editorTitle">Chỉnh sửa file</h2>
+                <button class="close-modal" onclick="hideEditorModal()">×</button>
+            </div>
+            <div class="editor-container">
+                <div class="line-numbers" id="lineNumbers"></div>
+                <textarea id="editorTextarea" spellcheck="false" oninput="syncLineNumbers()"
+                    onscroll="syncScroll()"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideEditorModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="saveFile()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal" id="previewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="previewTitle">Xem trước</h2>
+                <button class="close-modal" onclick="hidePreviewModal()">×</button>
+            </div>
+            <div class="preview-body" id="previewBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPath = '/';
+
+        // Load files on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFiles(currentPath);
+        });
+
+        // Load files function
+        async function loadFiles(path) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('fileGrid').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+
+            // Clean up old previews if any
+            hidePreviewModal();
+
+            try {
+                const response = await fetch('/webdav' + path, {
+                    method: 'PROPFIND',
+                    headers: {
+                        'Depth': '1'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load');
+
+                const text = await response.text();
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, 'text/xml');
+                const files = parseWebDAVResponse(xml, path);
+
+                displayFiles(files);
+                updateBreadcrumb(path);
+            } catch (error) {
+                console.error('Error loading files:', error);
+                alert('Lỗi tải file. Vui lòng thử lại.');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function parseWebDAVResponse(xml, basePath) {
+            const responses = xml.getElementsByTagName('D:response');
+            const files = [];
+
+            for (let i = 1; i < responses.length; i++) {
+                let href = responses[i].getElementsByTagName('D:href')[0].textContent;
+
+                // Fix: href already includes the /webdav prefix from the server.
+                // We strip it here because all our fetch() calls prepend /webdav again.
+                // This prevents doubled paths like /webdav/webdav/file.txt
+                const prefix = '/webdav';
+                if (href.startsWith(prefix)) {
+                    href = href.substring(prefix.length);
+                }
+                if (!href.startsWith('/')) {
+                    href = '/' + href;
+                }
+
+                const propstat = responses[i].getElementsByTagName('D:propstat')[0];
+                const displayName = propstat.getElementsByTagName('D:displayname')[0]?.textContent || href.split('/').pop();
+                const isDir = propstat.getElementsByTagName('D:collection').length > 0;
+                const size = propstat.getElementsByTagName('D:getcontentlength')[0]?.textContent || 0;
+
+                files.push({
+                    name: decodeURIComponent(displayName),
+                    isDirectory: isDir,
+                    size: parseInt(size),
+                    path: href
+                });
+            }
+
+            return files;
+        }
+
+        function displayFiles(files) {
+            const grid = document.getElementById('fileGrid');
+            const empty = document.getElementById('emptyState');
+
+            if (files.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            grid.innerHTML = files.map(file => `
+                <div class="file-item" onclick="handleFileClick('${file.path}', ${file.isDirectory}, '${file.name}')">
+                    <div class="delete-btn" onclick="showDeleteConfirm(event, '${file.path}', '${file.name}')" title="Xóa">🗑️</div>
+                    ${!file.isDirectory ? `<div class="download-btn" onclick="downloadFile(event, '${file.path}', '${file.name}')" title="Tải xuống">📥</div>` : ''}
+                    ${!file.isDirectory && isEditable(file.name) ? `<div class="edit-btn" onclick="editFile(event, '${file.path}', '${file.name}')" title="Chỉnh sửa">✏️</div>` : ''}
+                    <div class="file-icon">${getFileIcon(file.name, file.isDirectory)}</div>
+                    <div class="file-name">${file.name}</div>
+                    ${!file.isDirectory ? `<div class="file-size">${formatSize(file.size)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(name, isDir) {
+            if (isDir) return '📁';
+
+            // Check if file has an extension
+            const parts = name.split('.');
+            if (parts.length === 1) {
+                // No extension - likely executable or binary file
+                return '⚙️';
+            }
+
+            const ext = parts.pop().toLowerCase();
+            const icons = {
+                'pdf': '📄', 'doc': '📝', 'docx': '📝', 'txt': '📝',
+                'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
+                'mp4': '🎬', 'avi': '🎬', 'mkv': '🎬', 'mov': '🎬',
+                'mp3': '🎵', 'wav': '🎵', 'flac': '🎵',
+                'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦', 'gz': '📦',
+                'js': '⚙️', 'py': '🐍', 'java': '☕', 'cpp': '⚙️', 'go': '🔵',
+                'html': '🌐', 'css': '🎨', 'json': '📋', 'xml': '📋',
+                'exe': '⚙️', 'bin': '⚙️', 'sh': '📜', 'bat': '📜'
+            };
+            return icons[ext] || '📄';
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function handleFileClick(path, isDir, name) {
+            if (isDir) {
+                currentPath = path;
+                loadFiles(path);
+            } else {
+                if (isPreviewable(name)) {
+                    previewFile(path, name);
+                } else if (isEditable(name)) {
+                    // Create an artificial click event to trigger edit
+                    const e = { stopPropagation: () => { } };
+                    editFile(e, path, name);
+                } else {
+                    window.open('/webdav' + path, '_blank');
+                }
+            }
+        }
+
+        function updateBreadcrumb(path) {
+            const parts = path.split('/').filter(p => p);
+            let html = '<a href="#" onclick="navigateTo(\'/\'); return false;">🏠 Home</a>';
+
+            let currentPath = '';
+            parts.forEach(part => {
+                currentPath += '/' + part;
+                html += ` <span>/</span> <a href="#" onclick="navigateTo('${currentPath}/'); return false;">${part}</a>`;
+            });
+
+            document.getElementById('breadcrumb').innerHTML = html;
+        }
+
+        function navigateTo(path) {
+            currentPath = path;
+            loadFiles(path);
+        }
+
+        function refreshFiles() {
+            loadFiles(currentPath);
+        }
+
+        // Upload functions
+        function showUploadZone() {
+            document.getElementById('uploadZone').classList.add('active');
+        }
+
+        function hideUploadZone() {
+            document.getElementById('uploadZone').classList.remove('active');
+        }
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            uploadFiles(e.target.files);
+        });
+
+        document.getElementById('folderInput').addEventListener('change', (e) => {
+            uploadFiles(e.target.files);
+        });
+
+        async function uploadFiles(files) {
+            const total = files.length;
+            if (total === 0) return;
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('fileGrid').style.opacity = '0.5';
+
+            let successCount = 0;
+            let currentFolder = currentPath;
+
+            for (let file of files) {
+                try {
+                    // Handle folder upload path resolution
+                    let uploadPath = currentFolder + file.name;
+
+                    // If uploading a folder structure (webkitRelativePath present)
+                    if (file.webkitRelativePath) {
+                        const parts = file.webkitRelativePath.split('/');
+                        // Ensure directories exist
+                        let checkPath = currentFolder;
+                        // Skip the last part (filename)
+                        for (let i = 0; i < parts.length - 1; i++) {
+                            checkPath += parts[i] + '/';
+                            // Try to create directory (ignore if exists)
+                            await fetch('/webdav' + checkPath, {
+                                method: 'MKCOL',
+                                credentials: 'include'
+                            }).catch(() => { });
+                        }
+                        uploadPath = currentFolder + file.webkitRelativePath;
+                    }
+
+                    const response = await fetch('/webdav' + uploadPath, {
+                        method: 'PUT',
+                        body: file,
+                        credentials: 'include'
+                    });
+
+                    if (!response.ok) throw new Error('Upload failed');
+                    successCount++;
+                } catch (error) {
+                    console.error('Error uploading:', error);
+                }
+            }
+
+            // Reset UI
+            document.getElementById('fileGrid').style.opacity = '1';
+            hideUploadZone();
+            refreshFiles();
+
+            if (successCount < total) {
+                alert(`Đã upload ${successCount}/${total} files. Có một số lỗi xảy ra.`);
+            }
+        }
+
+        // Create folder functions
+        function showCreateFolderModal() {
+            document.getElementById('createFolderModal').classList.add('active');
+            document.getElementById('folderName').value = '';
+            document.getElementById('folderName').focus();
+        }
+
+        function hideCreateFolderModal() {
+            document.getElementById('createFolderModal').classList.remove('active');
+        }
+
+        async function createFolder() {
+            const name = document.getElementById('folderName').value.trim();
+            if (!name) {
+                hideCreateFolderModal(); // Close if empty as requested
+                return;
+            }
+
+            try {
+                const response = await fetch('/webdav' + currentPath + name, {
+                    method: 'MKCOL',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('Failed');
+
+                hideCreateFolderModal();
+                refreshFiles();
+            } catch (error) {
+                alert('Lỗi tạo thư mục');
+            }
+        }
+
+        // Create file functions
+        function showCreateFileModal() {
+            document.getElementById('createFileModal').classList.add('active');
+            document.getElementById('fileName').value = '';
+            document.getElementById('fileName').focus();
+        }
+
+        function hideCreateFileModal() {
+            document.getElementById('createFileModal').classList.remove('active');
+        }
+
+        async function createFile() {
+            const name = document.getElementById('fileName').value.trim();
+            if (!name) {
+                hideCreateFileModal(); // Close if empty
+                return;
+            }
+
+            try {
+                const response = await fetch('/webdav' + currentPath + name, {
+                    method: 'PUT',
+                    body: '' // Empty file
+                });
+
+                if (!response.ok) throw new Error('Failed');
+
+                hideCreateFileModal();
+                refreshFiles();
+            } catch (error) {
+                alert('Lỗi tạo file');
+            }
+        }
+
+        // Delete functions
+        let deleteTarget = null;
+
+        function showDeleteConfirm(e, path, name) {
+            e.stopPropagation(); // Prevent file opening
+            deleteTarget = path;
+            document.getElementById('deleteConfirmText').textContent = `Bạn có chắc chắn muốn xóa "${name}"?`;
+            document.getElementById('deleteConfirmModal').classList.add('active');
+
+            // Unbind old event listener to prevent multiple clicks
+            const btn = document.getElementById('confirmDeleteBtn');
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.addEventListener('click', deleteItem);
+        }
+
+        function hideDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').classList.remove('active');
+            deleteTarget = null;
+        }
+
+        async function deleteItem() {
+            if (!deleteTarget) return;
+
+            try {
+                const response = await fetch('/webdav' + deleteTarget, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('Failed');
+
+                hideDeleteConfirmModal();
+                refreshFiles();
+            } catch (error) {
+                alert('Lỗi xóa file/thư mục');
+            }
+        }
+
+        function handleEnter(e, callback) {
+            if (e.key === 'Enter') callback();
+        }
+
+        // File Editing Functions
+        let currentEditPath = null;
+
+        function isEditable(filename) {
+            const parts = filename.split('.');
+            if (parts.length === 1) return true; // Default to editable for extensionless files (often scripts/text)
+
+            const ext = parts.pop().toLowerCase();
+            // Blacklist of known binary/media/large formats that shouldn't be edited as text
+            const binaryExtensions = [
+                'exe', 'dll', 'bin', 'so', 'dylib', 'iso', 'img', 'msi', 'deb', 'rpm',
+                'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+                'mp4', 'mkv', 'avi', 'mov', 'webm', 'ogv',
+                'mp3', 'wav', 'flac', 'ogg', 'm4a',
+                'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'ico',
+                'pdf', 'epub', 'docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'
+            ];
+            return !binaryExtensions.includes(ext);
+        }
+
+        function isPreviewable(filename) {
+            const parts = filename.split('.');
+            if (parts.length === 1) return false;
+
+            const ext = parts.pop().toLowerCase();
+            const previewableExts = [
+                'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
+                'mp4', 'webm', 'ogv', 'mov',
+                'mp3', 'wav', 'ogg', 'm4a',
+                'pdf'
+            ];
+            return previewableExts.includes(ext);
+        }
+
+        async function editFile(e, path, name) {
+            e.stopPropagation();
+            currentEditPath = path;
+
+            try {
+                const response = await fetch('/webdav' + path);
+                if (!response.ok) throw new Error('Failed to load file');
+
+                const content = await response.text();
+                const textarea = document.getElementById('editorTextarea');
+                textarea.value = content;
+                document.getElementById('editorTitle').textContent = `Editing: ${name}`;
+                document.getElementById('editorModal').classList.add('active');
+
+                // Init line numbers
+                syncLineNumbers();
+            } catch (error) {
+                alert('Không thể mở file để sửa: ' + error.message);
+            }
+        }
+
+        // Line number synchronization
+        function syncLineNumbers() {
+            const textarea = document.getElementById('editorTextarea');
+            const lineNumbers = document.getElementById('lineNumbers');
+            const lines = textarea.value.split('\n');
+            const count = lines.length;
+
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                html += i + '\n';
+            }
+            lineNumbers.textContent = html;
+        }
+
+        function syncScroll() {
+            const textarea = document.getElementById('editorTextarea');
+            const lineNumbers = document.getElementById('lineNumbers');
+            lineNumbers.scrollTop = textarea.scrollTop;
+        }
+
+        // Preview functions
+        function previewFile(path, name) {
+            const modal = document.getElementById('previewModal');
+            const title = document.getElementById('previewTitle');
+            const body = document.getElementById('previewBody');
+            const url = '/webdav' + path;
+            const ext = name.split('.').pop().toLowerCase();
+
+            title.textContent = `Xem trước: ${name}`;
+            body.innerHTML = '';
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
+                body.innerHTML = `<img src="${url}" alt="${name}">`;
+            } else if (['mp4', 'webm', 'ogv', 'mov'].includes(ext)) {
+                body.innerHTML = `<video src="${url}" controls autoplay></video>`;
+            } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+                body.innerHTML = `<audio src="${url}" controls autoplay></audio>`;
+            } else if (ext === 'pdf') {
+                body.innerHTML = `<iframe src="${url}"></iframe>`;
+            }
+
+            modal.classList.add('active');
+        }
+
+        function hidePreviewModal() {
+            const modal = document.getElementById('previewModal');
+            const body = document.getElementById('previewBody');
+            body.innerHTML = ''; // Stop video/audio
+            modal.classList.remove('active');
+        }
+
+        function downloadFile(e, path, name) {
+            if (e) e.stopPropagation();
+            const url = '/webdav' + path;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function hideEditorModal() {
+            document.getElementById('editorModal').classList.remove('active');
+            currentEditPath = null;
+        }
+
+        async function saveFile() {
+            if (!currentEditPath) return;
+
+            const content = document.getElementById('editorTextarea').value;
+
+            try {
+                const response = await fetch('/webdav' + currentEditPath, {
+                    method: 'PUT',
+                    body: content,
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('Failed to save');
+
+                hideEditorModal();
+                refreshFiles(); // Refresh to update timestamps/sizes
+                alert('Đã lưu thành công!');
+            } catch (error) {
+                alert('Lỗi khi lưu file: ' + error.message);
+            }
+        }
+
+        // Drag and drop
+        const uploadZone = document.getElementById('uploadZone');
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+
+            // Support folder drop if possible (Chrome/Edge) or falls back to files
+            const items = e.dataTransfer.items;
+            if (items) {
+                // Logic to scan items could go here for recursive folder drop, 
+                // but for simple drag and drop, standard files check is usually sufficient for files.
+                // Complete recursive folder drop via drag-and-drop needs FileSystem API which is more complex.
+                // For now we rely on the input[type=file][webkitdirectory] for proper folder upload 
+                // and standard file list for drag-drop (which often flattens folders or catches them as files).
+                // Let's stick to standard handling which is safer across browsers for now, 
+                // but updated the text to imply folder text is for the button manually.
+                uploadFiles(e.dataTransfer.files);
+            } else {
+                uploadFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Logout
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+    </script>
+</body>
+
+</html>

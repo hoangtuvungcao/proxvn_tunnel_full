@@ -14,6 +14,7 @@ import (
 	"errors"
 	"runtime"
 	"runtime/debug"
+	"time"
 
 	"flag"
 	"fmt"
@@ -28,7 +29,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"proxvn/backend/internal/api"
 	"proxvn/backend/internal/auth"
@@ -36,10 +36,13 @@ import (
 	"proxvn/backend/internal/database"
 	httpproxy "proxvn/backend/internal/http"
 	"proxvn/backend/internal/middleware"
+	"proxvn/backend/internal/models"
 	"proxvn/backend/internal/tunnel"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/time/rate"
 )
 
@@ -47,9 +50,9 @@ const (
 	defaultListenPort  = 8881
 	publicPortStart    = 10000
 	publicPortEnd      = 20000
-	heartbeatInterval  = 20 * time.Second
-	clientIdleTimeout  = 60 * time.Second
-	udpControlInterval = 3 * time.Second
+	heartbeatInterval  = 2 * time.Second
+	clientIdleTimeout  = 10 * time.Second // Faster cleanup (was 60)
+	udpControlInterval = 2 * time.Second
 	udpControlTimeout  = 6 * time.Second
 	backendIdleTimeout = 5 * time.Second
 	backendIdleRetries = 3
@@ -78,7 +81,7 @@ type server struct {
 	portMu         sync.Mutex
 
 	// Port reservation for reconnecting clients
-	portReservations map[string]*portReservation  // client key -> reservation
+	portReservations map[string]*portReservation // client key -> reservation
 	reservationMu    sync.Mutex
 
 	udpServer    *net.UDPConn
@@ -97,6 +100,15 @@ type server struct {
 
 	// Connection limiting
 	connSemaphore chan struct{}
+
+	runtimeStart      time.Time
+	totalConnections  uint64
+	activeConnections int64
+	totalBytesUp      uint64
+	totalBytesDown    uint64
+
+	throttleMu    sync.Mutex
+	throttledLogs map[string]time.Time
 }
 
 type rateLimiter struct {
@@ -132,6 +144,9 @@ type clientSession struct {
 	remoteIP       string
 	udpSecret      []byte // Key for UDP encryption
 	publicListener net.Listener
+
+	activeConnections int64
+	totalConnections  uint64
 }
 
 type udpServerSession struct {
@@ -302,6 +317,26 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 		} else {
 			defer db.Close() // ✅ This WILL run when main() exits
 			log.Printf("[database] SQLite3 initialized successfully")
+
+			// Seed default admin if no users exist
+			users, _ := db.GetAllUsers()
+			if len(users) == 0 {
+				log.Printf("[database] No users found. Creating default admin...")
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+				admin := &models.User{
+					ID:       uuid.New(),
+					Username: "admin",
+					Email:    "admin@proxvn.com",
+					Password: string(hashedPassword),
+					Role:     models.UserRoleAdmin,
+					APIKey:   uuid.New().String(),
+				}
+				if err := db.CreateUser(admin); err != nil {
+					log.Printf("[database] Failed to create default admin: %v", err)
+				} else {
+					log.Printf("[database] ✅ Created default admin: admin / admin123")
+				}
+			}
 		}
 	}
 
@@ -317,6 +352,9 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 		rateLimiters:     make(map[string]*rateLimiter),
 		connSemaphore:    make(chan struct{}, maxConnections),
 	}
+
+	srv.runtimeStart = time.Now()
+	srv.throttledLogs = make(map[string]time.Time)
 
 	// Initialize port pool
 	for port := publicPortStart; port <= publicPortEnd; port++ {
@@ -348,7 +386,7 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	// Initialize handlers if database available
 	var handlers *api.Handler
 	var authService *auth.AuthService
-	
+
 	if db != nil {
 		authService = auth.NewAuthService(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiry)
 		handlers = api.NewHandler(db, authService)
@@ -365,12 +403,36 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	router.Use(middleware.RecoveryMiddleware())
 	router.Use(middleware.CORSMiddleware())
 
+	// Admin subdomain routing
+	if false { // cfg.HTTP.Domain != "" {
+		router.Use(func(c *gin.Context) {
+			host := c.Request.Host
+			adminDomain := "admin." // + cfg.HTTP.Domain
+
+			// Check if accessing via admin subdomain
+			if host == adminDomain || host == adminDomain+":8881" {
+				// Allow admin routes
+				c.Next()
+				return
+			}
+
+			// If accessing via main domain, redirect /dashboard to admin subdomain
+			if c.Request.URL.Path == "/dashboard" || c.Request.URL.Path == "/dashboard/" {
+				c.Redirect(http.StatusMovedPermanently, "https://"+adminDomain+"/dashboard/")
+				c.Abort()
+				return
+			}
+			c.Next()
+		})
+		// log.Printf("[admin] Admin panel accessible at: https://admin.%s", cfg.HTTP.Domain)
+	}
+
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"server":  "ProxVN by TrongDev",
-			"version": "2.0.0",
+			"version": "7.5.0",
 		})
 	})
 
@@ -389,8 +451,17 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 
 	// Serve Landing Page files directly at root to work with relative links
 	router.StaticFile("/", filepath.Join(landingDir, "index.html"))
-	router.StaticFile("/style.css", filepath.Join(landingDir, "style.css"))
-	router.StaticFile("/script.js", filepath.Join(landingDir, "script.js"))
+
+	// Force correct MIME types for CSS/JS
+	router.GET("/style.css", func(c *gin.Context) {
+		c.Header("Content-Type", "text/css")
+		c.File(filepath.Join(landingDir, "style.css"))
+	})
+
+	router.GET("/script.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+		c.File(filepath.Join(landingDir, "script.js"))
+	})
 
 	// Serve Downloads (Map virtual paths to actual binaries)
 	// We assume 'bin' is in CWD or parent
@@ -447,133 +518,40 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 
 	// API routes (if database available)
 	if handlers != nil {
-		apiRouter := router.Group("/api/v1")
+		apiRouter := router.Group("/api")
 		{
+			// Public endpoints
 			apiRouter.POST("/auth/login", handlers.Login)
 			apiRouter.POST("/auth/register", handlers.Register)
 			apiRouter.GET("/metrics", handlers.GetMetrics)
-			apiRouter.GET("/tunnels", handlers.GetAllTunnels)
+			apiRouter.GET("/health", handlers.Health)
 
+			// Protected user endpoints
 			protected := apiRouter.Group("")
 			protected.Use(middleware.AuthMiddleware(authService))
 			{
 				protected.GET("/profile", handlers.GetProfile)
-				protected.POST("/tunnels", handlers.CreateTunnel)
-				protected.GET("/tunnels/:id", handlers.GetTunnel)
-				protected.PUT("/tunnels/:id", handlers.UpdateTunnel)
-				protected.DELETE("/tunnels/:id", handlers.DeleteTunnel)
-
-				// WebSocket endpoint (Moved to protected group)
-				protected.GET("/ws", func(c *gin.Context) {
-					// Verify auth (should be redundant if middleware works, but safe)
-					_, exists := c.Get("user_id")
-					if !exists {
-						c.AbortWithStatus(http.StatusUnauthorized)
-						return
-					}
-
-					var wsUpgrader = websocket.Upgrader{
-						CheckOrigin: func(r *http.Request) bool {
-							// Allow same origin or if not set (cli/app)
-							origin := r.Header.Get("Origin")
-							if origin == "" {
-								return true
-							}
-							// In production, check specific domains.
-							// For now, if we have a valid token (which we do due to middleware), we trust the connection.
-							// The Token prevents CSRF/Hijacking effectively if it's not leaked.
-							return true
-						},
-					}
-
-					conn, err := wsUpgrader.Upgrade(c.Writer, c.Request, nil)
-					if err != nil {
-						log.Printf("[ws] Upgrade failed: %v", err)
-						return
-					}
-					defer conn.Close()
-
-					// ... (rest of WS logic matches existing inline handler)
-					// We reuse the logic from the previously existing inline handler but now it is authenticated.
-					// Since I am replacing the block, I need to include the body logic.
-
-					// Send initial data
-					s.clientsMu.RLock()
-					// ... (reimplementing the send logic for brevity in tool call, see context)
-					tunnels := make([]gin.H, 0, len(s.clients))
-					for _, session := range s.clients {
-						host, port, _ := net.SplitHostPort(session.target)
-						if host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1" {
-							host = session.remoteIP
-						}
-						if port == "" {
-							port = session.target
-						}
-
-						tunnels = append(tunnels, gin.H{
-							"name":        session.clientID,
-							"status":      "active",
-							"protocol":    session.protocol,
-							"local_host":  host,
-							"local_port":  port,
-							"public_port": session.publicPort,
-							"bytes_up":    atomic.LoadUint64(&session.bytesUp),
-							"bytes_down":  atomic.LoadUint64(&session.bytesDown),
-						})
-					}
-					s.clientsMu.RUnlock()
-
-					if err := conn.WriteJSON(gin.H{
-						"type": "tunnel_update",
-						"data": tunnels,
-					}); err != nil {
-						return
-					}
-
-					ticker := time.NewTicker(2 * time.Second)
-					defer ticker.Stop()
-
-					for range ticker.C {
-						s.clientsMu.RLock()
-						tunnels := make([]gin.H, 0, len(s.clients))
-						for _, session := range s.clients {
-							host, _, _ := net.SplitHostPort(session.target)
-							if host == "" {
-								host = session.remoteIP
-							}
-							// Re-calculating properly
-							h, p, _ := net.SplitHostPort(session.target)
-							if h == "" || h == "localhost" || h == "127.0.0.1" || h == "::1" {
-								h = session.remoteIP
-							}
-							if p == "" {
-								p = session.target
-							}
-
-							tunnels = append(tunnels, gin.H{
-								"name":        session.clientID,
-								"status":      "active",
-								"protocol":    session.protocol,
-								"local_host":  h,
-								"local_port":  p,
-								"public_port": session.publicPort,
-							})
-						}
-						activeTunnels := len(s.clients)
-						s.clientsMu.RUnlock()
-
-						if err := conn.WriteJSON(gin.H{
-							"type": "metrics",
-							"data": gin.H{
-								"active_tunnels": activeTunnels,
-							},
-						}); err != nil {
-							return
-						}
-					}
-				})
+				protected.GET("/tunnels", handlers.GetTunnels)
+				protected.GET("/ws", handlers.HandleWebSocket)
 			}
-			// REMOVED duplicate handlers.HandleWebSocket call from here
+
+			// Admin-only endpoints
+			admin := apiRouter.Group("/admin")
+			admin.Use(middleware.AuthMiddleware(authService))
+			admin.Use(middleware.AdminMiddleware())
+			{
+				// User Management
+				admin.GET("/users", handlers.GetAllUsers)
+				admin.POST("/users", handlers.CreateUserByAdmin)
+				admin.DELETE("/users/:id", handlers.DeleteUser)
+
+				// Tunnel Management
+				admin.GET("/tunnels", handlers.GetAllTunnels)
+				admin.DELETE("/tunnels/:id", handlers.DeleteTunnelByAdmin)
+
+				// System Stats
+				admin.GET("/stats", handlers.GetSystemStats)
+			}
 		}
 	}
 
@@ -872,6 +850,10 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 	// Start heartbeat checker
 	go s.heartbeatChecker(session)
 
+	atomic.AddInt64(&s.activeConnections, 1)
+	s.logOnce(fmt.Sprintf("[server] active sessions: %d", atomic.LoadInt64(&s.activeConnections)), "active_sessions")
+	defer atomic.AddInt64(&s.activeConnections, -1)
+
 	// Start public listener for TCP
 	if session.protocol == "tcp" {
 		go s.startPublicListener(session)
@@ -1005,21 +987,35 @@ func (s *server) handlePublicConnection(session *clientSession, publicConn net.C
 	select {
 	case clientConn := <-waitCh:
 		if clientConn == nil {
-			log.Printf("[server] client refused proxy connection %s", proxyID)
+			s.logOnce(fmt.Sprintf("[server] client refused proxy connection %s", proxyID), "proxy_refused")
 			return
 		}
 
-		// Public reads from Client (Upstream)
-		go proxyCopy(publicConn, clientConn, &session.bytesUp)
-		// Client reads from Public (Downstream)
-		proxyCopy(clientConn, publicConn, &session.bytesDown)
+		s.handleProxyStream(session, publicConn, clientConn)
 
 	case <-time.After(10 * time.Second):
-		log.Printf("[server] timeout waiting for client proxy connection %s", proxyID)
+		s.logOnce(fmt.Sprintf("[server] timeout waiting for client proxy connection %s", proxyID), "proxy_timeout", 15*time.Second)
 	}
 }
 
-func proxyCopy(dst, src net.Conn, counter *uint64) {
+func (s *server) handleProxyStream(session *clientSession, publicConn, clientConn net.Conn) {
+	atomic.AddInt64(&session.activeConnections, 1)
+	atomic.AddUint64(&session.totalConnections, 1)
+	atomic.AddUint64(&s.totalConnections, 1)
+	defer atomic.AddInt64(&session.activeConnections, -1)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		proxyCopy(publicConn, clientConn, &session.bytesUp, &s.totalBytesUp)
+	}()
+
+	proxyCopy(clientConn, publicConn, &session.bytesDown, &s.totalBytesDown)
+	wg.Wait()
+}
+
+func proxyCopy(dst, src net.Conn, counter *uint64, totalCounter *uint64) {
 	defer dst.Close()
 	defer src.Close()
 
@@ -1029,6 +1025,9 @@ func proxyCopy(dst, src net.Conn, counter *uint64) {
 		nr, er := src.Read(buf)
 		if nr > 0 {
 			atomic.AddUint64(counter, uint64(nr))
+			if totalCounter != nil {
+				atomic.AddUint64(totalCounter, uint64(nr))
+			}
 			nw, ew := dst.Write(buf[0:nr])
 			if nw < 0 || nr < nw {
 				nw = 0
@@ -1374,9 +1373,9 @@ func (s *server) removeClient(session *clientSession) {
 				expiresAt: time.Now().Add(5 * time.Minute), // 5 minute grace period
 			}
 			s.reservationMu.Unlock()
-			log.Printf("[server] Reserved port %d for client %s (key: %s) for 5 minutes", 
+			log.Printf("[server] Reserved port %d for client %s (key: %s) for 5 minutes",
 				session.publicPort, session.clientID, session.key)
-			
+
 			// Still release the port back to pool, but keep reservation
 			s.releasePort(session.publicPort)
 		}
@@ -1405,6 +1404,7 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 		baseDomain = s.httpProxy.GetBaseDomain()
 	}
 
+	var activeProxyConnections int64
 	for _, session := range s.clients {
 		host, port, _ := net.SplitHostPort(session.target)
 		if host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1" {
@@ -1424,6 +1424,7 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 		down := atomic.LoadUint64(&session.bytesDown)
 		totalUp += up
 		totalDown += down
+		activeProxyConnections += atomic.LoadInt64(&session.activeConnections)
 
 		tunnels = append(tunnels, gin.H{
 			"name":        session.clientID,
@@ -1447,15 +1448,44 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 	}
 
 	// Send metrics
+	metrics := gin.H{
+		"activeTunnels":          len(s.clients),
+		"activeProxyConnections": activeProxyConnections,
+		"activeBytesUp":          totalUp,
+		"activeBytesDown":        totalDown,
+		"totalConnections":       atomic.LoadUint64(&s.totalConnections),
+		"totalBytesUp":           atomic.LoadUint64(&s.totalBytesUp),
+		"totalBytesDown":         atomic.LoadUint64(&s.totalBytesDown),
+		"uptimeSeconds":          time.Since(s.runtimeStart).Seconds(),
+	}
+
 	return conn.WriteJSON(gin.H{
 		"type": "metrics",
-		"data": gin.H{
-			"activeTunnels":    len(s.clients),
-			"totalConnections": 0,
-			"totalBytesUp":     totalUp,
-			"totalBytesDown":   totalDown,
-		},
+		"data": metrics,
 	})
+}
+
+func (s *server) logOnce(message, key string, cooldown ...time.Duration) {
+	if message == "" || key == "" {
+		return
+	}
+
+	interval := 30 * time.Second
+	if len(cooldown) > 0 {
+		interval = cooldown[0]
+	}
+
+	now := time.Now()
+	s.throttleMu.Lock()
+	last, ok := s.throttledLogs[key]
+	if ok && now.Sub(last) < interval {
+		s.throttleMu.Unlock()
+		return
+	}
+	s.throttledLogs[key] = now
+	s.throttleMu.Unlock()
+
+	log.Println(message)
 }
 
 func (s *server) getNextPublicPort(clientKey string, requestedPort int) int {
@@ -1480,12 +1510,12 @@ func (s *server) getNextPublicPort(clientKey string, requestedPort int) int {
 					}
 				}
 				s.usedPorts[requestedPort] = true
-				
+
 				// Clear reservation since it's now in use
 				s.reservationMu.Lock()
 				delete(s.portReservations, clientKey)
 				s.reservationMu.Unlock()
-				
+
 				log.Printf("[server] Assigned reserved port %d to client %s", requestedPort, clientKey)
 				return requestedPort
 			}

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-	
+
 	"proxvn/backend/internal/tunnel"
 )
 
@@ -20,7 +20,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		log.Printf("[client] Received HTTP request but not in HTTP mode")
 		return
 	}
-	
+
 	// Determine scheme based on port
 	scheme := "http"
 	if strings.HasSuffix(c.localAddr, ":443") {
@@ -34,12 +34,12 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		c.sendHTTPError(msg.ID, http.StatusBadGateway, err.Error())
 		return
 	}
-	
+
 	// Set headers
 	for key, value := range msg.Headers {
 		req.Header.Set(key, value)
 	}
-	
+
 	// CRITICAL: Rewrite Host header to local address to ensure correct VirtualHost matching
 	// Otherwise Apache/Nginx might serve default content if they don't recognize the public subdomain
 	// Force "localhost" if targeting local loopback to match browser behavior
@@ -48,7 +48,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 	} else {
 		req.Host = c.localAddr
 	}
-	
+
 	// Forward to local HTTP server
 	// Skip SSL verification for local HTTPS targets (common for dev)
 	// This is ACCEPTABLE because:
@@ -62,7 +62,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		Timeout:   30 * time.Second,
 		Transport: tr,
 	}
-	
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		//log.Printf("[client] Failed to forward HTTP request to %s: %v", c.localAddr, err)
@@ -70,7 +70,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -78,15 +78,14 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		//c.sendHTTPError(msg.ID, http.StatusInternalServerError, "Failed to read response")
 		return
 	}
-	
-	// Convert headers to map
+
+	// Convert headers to map, preserving all values by joining with commas
+	// This is important for headers like 'Dav' which can have multiple values
 	headers := make(map[string]string)
 	for key, values := range resp.Header {
-		if len(values) > 0 {
-			headers[key] = values[0]
-		}
+		headers[key] = strings.Join(values, ", ")
 	}
-	
+
 	// Send response back to server
 	responseMsg := tunnel.Message{
 		Type:       "http_response",
@@ -95,16 +94,16 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		Headers:    headers,
 		Body:       body,
 	}
-	
+
 	if err := c.enc.Encode(responseMsg); err != nil {
 		//log.Printf("[client] Failed to send HTTP response: %v", err)
 		return
 	}
-	
+
 	// Update traffic stats
 	atomic.AddUint64(&c.bytesDown, uint64(len(msg.Body)))
 	atomic.AddUint64(&c.bytesUp, uint64(len(body)))
-	
+
 	//log.Printf("[client] HTTP %s %s -> %d (%d bytes)", msg.Method, msg.Path, resp.StatusCode, len(body))
 }
 
@@ -112,9 +111,9 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 func (c *client) sendHTTPError(requestID string, statusCode int, errorMsg string) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "text/plain"
-	
+
 	errorBody := []byte(errorMsg)
-	
+
 	responseMsg := tunnel.Message{
 		Type:       "http_response",
 		ID:         requestID,
@@ -122,7 +121,7 @@ func (c *client) sendHTTPError(requestID string, statusCode int, errorMsg string
 		Headers:    headers,
 		Body:       errorBody,
 	}
-	
+
 	if err := c.enc.Encode(responseMsg); err != nil {
 		//log.Printf("[client] Failed to send HTTP error response: %v", err)
 	}
