@@ -833,3 +833,9 @@ cp .env.server.example .env
 ```bash
 proxvn --cert-pin 5d21642f9c2ac2aef414ecb27b54cdb5d53cb6d554bbf965de19d2c8652f47c6 [other-flags]
 ```
+
+## Acknowledgments
+
+Dự án này được phát triển dựa trên mã nguồn mở từ:
+* [tunnel](https://github.com/kami2k1/tunnel) của tác giả [kami2k1](https://github.com/kami2k1).
+* Copyright (c) 2026 kami2k1.
