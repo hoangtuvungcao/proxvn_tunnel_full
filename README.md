@@ -30,6 +30,21 @@
 
 ---
 
+## 🎁 Server Công Cộng Miễn Phí
+
+Bạn **không cần tự dựng server** — đã có sẵn một server ProxVN miễn phí cho mọi người dùng:
+
+| | |
+| :--- | :--- |
+| **Tunnel server** | `103.77.246.196:8882` (mặc định của client) |
+| **Domain** | `bacsycay.click` |
+| **Dashboard** | https://bacsycay.click/dashboard/ |
+
+Client đã trỏ sẵn tới server này, chỉ cần tải về và chạy. Muốn dùng server riêng thì sửa
+file cấu hình `proxvn.json` hoặc dùng flag `--server` (xem [Cấu hình](docs/02-configuration.md)).
+
+---
+
 ## 🚀 Cài Đặt & Chạy Nhanh
 
 ### 1. Tải về (Download)
@@ -51,8 +66,20 @@ Tải binary mới nhất từ [Releases](https://github.com/hoangtuvungcao/prox
 **Public SSH port 22:**
 ```bash
 ./bin/client/proxvn-linux-amd64 --proto tcp 22
-# Output: 103.77.246.196:10001
+# Output: 103.77.246.196:10000
 ```
+
+**Public Game Server (UDP) — vd Minecraft Bedrock:**
+```bash
+./bin/client/proxvn-linux-amd64 --proto udp 19132
+# Output: 103.77.246.196:10000 (UDP)
+```
+
+### 3. Cấu hình bằng file (không cần sửa code)
+
+Sao chép [`bin/proxvn.json.example`](bin/proxvn.json.example) thành `proxvn.json` (đặt cạnh
+binary), chỉnh `server`/`proto`/`port`… rồi chạy. Thứ tự ưu tiên:
+**flag dòng lệnh > `proxvn.json` > mặc định**.
 
 ---
 

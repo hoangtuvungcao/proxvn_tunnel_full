@@ -1,0 +1,10 @@
+{
+  "_comment": "ProxVN client config. Copy to 'proxvn.json' (cạnh binary hoặc ~/.proxvn/config.json). Flag dòng lệnh sẽ ghi đè giá trị ở đây.",
+  "server": "103.77.246.196:8882",
+  "host": "localhost",
+  "port": 80,
+  "proto": "tcp",
+  "ui": true,
+  "cert_pin": "",
+  "insecure": false
+}

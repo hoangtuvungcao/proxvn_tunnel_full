@@ -218,14 +218,19 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 `)
 	}
 
-	serverAddr := flag.String("server", defaultServerAddr, "Địa chỉ tunnel server (mặc định: 103.77.246.196:8882)")
-	hostFlag := flag.String("host", defaultLocalHost, "Host nội bộ cần tunnel (mặc định: localhost)")
-	portFlag := flag.Int("port", defaultLocalPort, "Port nội bộ (bị ghi đè nếu truyền trực tiếp)")
+	// Load config file (if any) so its values become the flag defaults.
+	// Precedence: command-line flags > config file > built-in defaults.
+	cfgFile := loadClientConfig(preParseConfigFlag(os.Args[1:]))
+
+	_ = flag.String("config", "", "Đường dẫn file cấu hình JSON (mặc định: proxvn.json cạnh binary / ~/.proxvn/config.json)")
+	serverAddr := flag.String("server", cfgFile.Server, "Địa chỉ tunnel server (host:port)")
+	hostFlag := flag.String("host", cfgFile.Host, "Host nội bộ cần tunnel (mặc định: localhost)")
+	portFlag := flag.Int("port", cfgFile.Port, "Port nội bộ (bị ghi đè nếu truyền trực tiếp)")
 	id := flag.String("id", "", "Client ID (optional)")
-	proto := flag.String("proto", "tcp", "Protocol: tcp, udp, or http")
-	UI := flag.Bool("ui", true, "Enable TUI (disable with --ui=false)")
-	certPin := flag.String("cert-pin", "", "Optional: Server certificate SHA256 fingerprint for pinning (hex format)")
-	insecure := flag.Bool("insecure", false, "Skip TLS certificate verification (for testing with localhost)")
+	proto := flag.String("proto", cfgFile.Proto, "Protocol: tcp, udp, or http")
+	UI := flag.Bool("ui", cfgFile.UI, "Enable TUI (disable with --ui=false)")
+	certPin := flag.String("cert-pin", cfgFile.CertPin, "Optional: Server certificate SHA256 fingerprint for pinning (hex format)")
+	insecure := flag.Bool("insecure", cfgFile.Insecure, "Skip TLS certificate verification (for testing with localhost)")
 
 	// File sharing flags
 	fileFlag := flag.String("file", "", "Đường dẫn file/folder cần chia sẻ (vd: /home/user/docs, C:\\\\Users\\\\Admin\\\\Documents)")

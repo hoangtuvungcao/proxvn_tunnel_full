@@ -24,12 +24,40 @@ Server có thể được cấu hình qua biến môi trường (Environment Var
 
 ## Cấu hình Client (ProxVN Client)
 
-Client chủ yếu cấu hình qua flags (xem [03-Client Guide](03-client-guide.md)). Tuy nhiên, có thể dùng biến môi trường trong một số trường hợp automation.
+Client có thể cấu hình theo 3 cấp, ưu tiên từ cao xuống thấp:
 
-| Biến | Mô tả |
-| :--- | :--- |
-| `PROXVN_SERVER` | Địa chỉ server mặc định (thay thế `--server`). |
-| `PROXVN_TOKEN` | Token xác thực (nếu server yêu cầu Auth). |
+**Flag dòng lệnh  >  File cấu hình `proxvn.json`  >  Giá trị mặc định build-in**
+
+Nhờ vậy bạn đổi server/domain mà **không cần sửa code hay build lại** — chỉ sửa file `proxvn.json`.
+
+### File cấu hình `proxvn.json`
+
+Client tự tìm file theo thứ tự: `--config <path>` → biến môi trường `PROXVN_CONFIG`
+→ `proxvn.json` cạnh binary → `proxvn.json` / `config.json` ở thư mục hiện tại
+→ `~/.proxvn/config.json`. Mẫu: [`bin/proxvn.json.example`](../bin/proxvn.json.example).
+
+```json
+{
+  "server": "103.77.246.196:8882",
+  "host": "localhost",
+  "port": 80,
+  "proto": "tcp",
+  "ui": true,
+  "cert_pin": "",
+  "insecure": false
+}
+```
+
+```bash
+# Dùng file cấu hình mặc định
+./proxvn-linux-amd64                       # đọc proxvn.json nếu có
+
+# Chỉ định file cấu hình
+./proxvn-linux-amd64 --config /etc/proxvn/client.json
+
+# Flag luôn ghi đè file cấu hình
+./proxvn-linux-amd64 --server my-vps:8882 --proto http 3000
+```
 
 ## File `.env` mẫu (Server)
 
