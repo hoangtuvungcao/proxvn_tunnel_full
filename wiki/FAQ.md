@@ -47,7 +47,7 @@ npm run dev
 # Tunnel
 proxvn --proto http 3000
 
-# Bạn sẽ nhận URL: https://abc123.vutrungocrong.fun
+# Bạn sẽ nhận URL: https://abc123.bacsycay.click
 ```
 
 ### Subdomain có thay đổi không?
@@ -83,11 +83,11 @@ Chi tiết: [Server Setup Guide](Server-Setup)
 ```bash
 proxvn 22
 ```
-Bạn sẽ nhận: `103.77.246.206:10000`
+Bạn sẽ nhận: `103.77.246.196:10000`
 
 Kết nối:
 ```bash
-ssh user@103.77.246.206 -p 10000
+ssh user@103.77.246.196 -p 10000
 ```
 
 ### Làm sao để host Minecraft server?
@@ -97,7 +97,7 @@ proxvn --proto udp 19132
 ```
 ✅ **An Toàn:** Từ phiên bản v4.0.0, ProxVN đã hỗ trợ **Mã hóa AES-GCM 256-bit** cho toàn bộ traffic UDP. Dữ liệu game/voice của bạn được bảo vệ an toàn khỏi việc nghe lén trên đường truyền Internet.
 
-Bạn bè connect vào: `103.77.246.206:10000`
+Bạn bè connect vào: `103.77.246.196:10000`
 
 ### TCP mode có SSL không?
 **Có**, tất cả tunnel connections đều mã hóa TLS, kể cả TCP mode.
@@ -208,7 +208,7 @@ file proxvn-android
 
 ```bash
 # Test connection to server
-telnet 103.77.246.206 8882
+telnet 103.77.246.196 8882
 ```
 
 ### Local app không nhận traffic?
@@ -313,7 +313,7 @@ Best practice:
 **Có!** Dùng Termux:
 ```bash
 # In Termux
-wget https://vutrungocrong.fun/downloads/proxvn-android
+wget https://bacsycay.click/downloads/proxvn-android
 chmod +x proxvn-android
 ./proxvn-android --proto http 8080
 ```
@@ -321,7 +321,7 @@ chmod +x proxvn-android
 ### Có thể tunnel từ Raspberry Pi không?
 **Có!** Dùng Linux client:
 ```bash
-wget https://vutrungocrong.fun/downloads/proxvn-linux-client
+wget https://bacsycay.click/downloads/proxvn-linux-client
 chmod +x proxvn-linux-client
 ./proxvn-linux-client --proto http 8123  # Home Assistant
 ```
@@ -406,7 +406,7 @@ Include:
 - 💬 [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel/discussions)
 - 🐛 [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
 - 📧 Email: trong20843@gmail.com
-- 🌐 Website: [vutrungocrong.fun](https://vutrungocrong.fun)
+- 🌐 Website: [bacsycay.click](https://bacsycay.click)
 
 ---
 

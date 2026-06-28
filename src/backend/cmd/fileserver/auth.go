@@ -123,12 +123,10 @@ func PasswordAuthMiddleware(sessionMgr *SessionManager) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// [DEBUG] Log request
-			// log.Printf("[AUTH] Checking %s %s (Remote: %s)", r.Method, r.URL.Path, r.RemoteAddr)
 
 			// Check session cookie first
 			if cookie, err := r.Cookie("proxvn_session"); err == nil {
 				if sessionMgr.ValidateSession(cookie.Value) {
-					// log.Printf("[AUTH] ✅ Cookie valid")
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -137,7 +135,6 @@ func PasswordAuthMiddleware(sessionMgr *SessionManager) func(http.Handler) http.
 			// Check Authorization header
 			if auth := r.Header.Get("Authorization"); auth != "" {
 				if validateAuthHeader(auth, sessionMgr) {
-					// log.Printf("[AUTH] ✅ Header valid")
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -155,7 +152,6 @@ func PasswordAuthMiddleware(sessionMgr *SessionManager) func(http.Handler) http.
 			if ok {
 				// Validate both username and password
 				if sessionMgr.ValidateCredentials(username, password) {
-					// log.Printf("[AUTH] ✅ Credentials accepted for user '%s'", username)
 					next.ServeHTTP(w, r)
 					return
 				} else {

@@ -7,7 +7,7 @@ HTTP Tunneling là tính năng **mới nhất của ProxVN v4.0**, cho phép b�
 HTTP Tunneling biến localhost của bạn thành URL HTTPS công khai:
 
 ```
-localhost:3000  →  https://abc123.vutrungocrong.fun
+localhost:3000  →  https://abc123.bacsycay.click
 ```
 
 ### Ưu điểm
@@ -35,7 +35,7 @@ proxvn --proto http 3000
 **Output:**
 ```
 ✅ HTTP Tunnel Active
-🌐 Public URL: https://a1b2c3.vutrungocrong.fun
+🌐 Public URL: https://a1b2c3.bacsycay.click
 📍 Local: localhost:3000
 🔒 Security: TLS Encrypted
 ```
@@ -244,7 +244,7 @@ proxvn --proto http 3000
 proxvn --proto http 3000
 ```
 
-2. Copy public URL: `https://abc123.vutrungocrong.fun`
+2. Copy public URL: `https://abc123.bacsycay.click`
 
 3. Open trên điện thoại (4G/5G để test thật)
 
@@ -282,7 +282,7 @@ ProxVN tự động reconnect khi mất mạng:
 ```
 [INFO] Connection lost. Reconnecting...
 [INFO] Reconnected successfully!
-[INFO] Subdomain preserved: abc123.vutrungocrong.fun
+[INFO] Subdomain preserved: abc123.bacsycay.click
 ```
 
 **Lưu ý:** Chỉ giữ subdomain nếu reconnect trong **5 phút**.
@@ -328,7 +328,7 @@ Client hiển thị real-time stats:
 ╔══════════════════════════════════════════════════════
 ║  🟢 Status   : ACTIVE
 ║  🔗 Local     : localhost:3000
-║  🌐 Public    : https://abc123.vutrungocrong.fun
+║  🌐 Public    : https://abc123.bacsycay.click
 ║  📡 Protocol  : HTTP
 ╠══════════════════════════════════════════════════════
 ║  📊 Traffic  : ⬆️  1.2 KB/s ⬇️  450 B/s

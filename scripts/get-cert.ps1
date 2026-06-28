@@ -2,7 +2,7 @@
 # Lấy SHA256 fingerprint của server certificate
 
 param(
-    [string]$Server = "103.77.246.206",
+    [string]$Server = "103.77.246.196",
     [int]$Port = 8882
 )
 

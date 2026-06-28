@@ -72,7 +72,7 @@ func (s *server) initHTTPProxy(cfg *config.Config) {
 	if httpDomain == "" {
 		log.Printf("[http] HTTP_DOMAIN not configured - HTTP tunneling disabled")
 		log.Printf("[http] HTTP clients will fallback to IP:port mode")
-		log.Printf("[http] To enable: set HTTP_DOMAIN environment variable (e.g., HTTP_DOMAIN=vutrungocrong.fun)")
+		log.Printf("[http] To enable: set HTTP_DOMAIN environment variable (e.g., HTTP_DOMAIN=bacsycay.click)")
 		return
 	}
 
@@ -123,15 +123,45 @@ func (s *server) registerHTTPClient(session *clientSession) error {
 		return fmt.Errorf("HTTP proxy not available")
 	}
 
-	// Generate unique subdomain
-	subdomain, err := httpproxy.GenerateSubdomain()
-	if err != nil {
-		return fmt.Errorf("failed to generate subdomain: %w", err)
+	subdomain := session.subdomain
+	var err error
+
+	// If client requested a subdomain, check if it's reserved for them or free
+	if subdomain != "" {
+		// Verify reservation status on store
+		reservedByOther, err := s.reservations.IsSubdomainReservedByOther(subdomain, session.key)
+		if err == nil && reservedByOther {
+			log.Printf("[server] Subdomain %s is reserved by another client", subdomain)
+			subdomain = ""
+		}
+	}
+
+	// If no subdomain requested or it was reserved by someone else, check if they have a reserved subdomain
+	if subdomain == "" {
+		reservedSub, exists, err := s.reservations.GetReservedSubdomain(session.key)
+		if err == nil && exists && reservedSub != "" {
+			subdomain = reservedSub
+		}
+	}
+
+	// Generate unique subdomain if still empty
+	if subdomain == "" {
+		subdomain, err = httpproxy.GenerateSubdomain()
+		if err != nil {
+			return fmt.Errorf("failed to generate subdomain: %w", err)
+		}
 	}
 
 	// Register with HTTP proxy
 	if err := s.httpProxy.RegisterClient(subdomain, session); err != nil {
-		return err
+		log.Printf("[server] Subdomain %s registration failed: %v. Generating random subdomain...", subdomain, err)
+		subdomain, err = httpproxy.GenerateSubdomain()
+		if err != nil {
+			return fmt.Errorf("failed to generate subdomain: %w", err)
+		}
+		if err := s.httpProxy.RegisterClient(subdomain, session); err != nil {
+			return err
+		}
 	}
 
 	session.subdomain = subdomain

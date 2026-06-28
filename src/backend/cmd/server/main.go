@@ -24,11 +24,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 
 	"proxvn/backend/internal/api"
 	"proxvn/backend/internal/auth"
@@ -37,6 +40,7 @@ import (
 	httpproxy "proxvn/backend/internal/http"
 	"proxvn/backend/internal/middleware"
 	"proxvn/backend/internal/models"
+	"proxvn/backend/internal/pool"
 	"proxvn/backend/internal/tunnel"
 
 	"github.com/gin-gonic/gin"
@@ -50,8 +54,8 @@ const (
 	defaultListenPort  = 8881
 	publicPortStart    = 10000
 	publicPortEnd      = 20000
-	heartbeatInterval  = 2 * time.Second
-	clientIdleTimeout  = 10 * time.Second // Faster cleanup (was 60)
+	heartbeatInterval  = 5 * time.Second
+	clientIdleTimeout  = 30 * time.Second // Faster cleanup (was 60)
 	udpControlInterval = 2 * time.Second
 	udpControlTimeout  = 6 * time.Second
 	backendIdleTimeout = 5 * time.Second
@@ -70,8 +74,12 @@ const (
 	udpMsgPong      byte = 5
 )
 
+// debugServerUDP enables verbose logging of the inbound UDP data path.
+const debugServerUDP = false
+
 type server struct {
 	listenPort int
+	publicHost string // Public host/IP advertised to clients for TCP/UDP tunnels
 	clients    map[string]*clientSession
 	clientsMu  sync.RWMutex
 
@@ -80,13 +88,17 @@ type server struct {
 	usedPorts      map[int]bool
 	portMu         sync.Mutex
 
-	// Port reservation for reconnecting clients
-	portReservations map[string]*portReservation // client key -> reservation
-	reservationMu    sync.Mutex
+	// Reservation store for reconnecting clients (SQLite or Memory)
+	reservations ReservationStore
+	listener     net.Listener
 
 	udpServer    *net.UDPConn
 	udpMu        sync.Mutex
 	udpSessions  map[string]*udpServerSession
+	// Last known UDP control address of each client, keyed by client key.
+	// Needed so the server can push inbound (public→client) UDP packets even
+	// before the client has sent any data for a given session.
+	udpClientAddrs map[string]*net.UDPAddr
 	httpServer   *http.Server
 	proxyWaiting map[string]chan net.Conn
 	proxyMu      sync.Mutex
@@ -118,12 +130,6 @@ type rateLimiter struct {
 	lastSeen      time.Time
 }
 
-// portReservation holds a reserved port for a client key with expiry time
-type portReservation struct {
-	port      int
-	expiresAt time.Time
-}
-
 type clientSession struct {
 	server         *server // Reference to parent server for HTTP response handling
 	conn           net.Conn
@@ -135,6 +141,8 @@ type clientSession struct {
 	protocol       string
 	publicPort     int
 	subdomain      string // For HTTP tunneling
+	generation     int64  // Client generation ID to prevent ghost sessions
+	state          *tunnel.StateMachine
 	lastSeen       time.Time
 	closeOnce      sync.Once
 	done           chan struct{}
@@ -144,6 +152,7 @@ type clientSession struct {
 	remoteIP       string
 	udpSecret      []byte // Key for UDP encryption
 	publicListener net.Listener
+	publicUDPConn  *net.UDPConn // Public UDP listener for inbound (proto=udp) tunnels
 
 	activeConnections int64
 	totalConnections  uint64
@@ -160,6 +169,14 @@ type udpServerSession struct {
 	closed     chan struct{}
 	timer      *time.Timer
 	idleCount  int
+
+	// Inbound (public → client) session fields. When inbound is true the
+	// session bridges an external UDP peer (extAddr) on the tunnel's public
+	// port (publicConn) to the client; conn/remoteAddr are unused.
+	inbound    bool
+	publicConn *net.UDPConn
+	extAddr    *net.UDPAddr
+	lastActive time.Time
 }
 
 type jsonWriter struct {
@@ -278,7 +295,7 @@ func main() {
   • HTTPS Proxy:   443  (nếu bật HTTP Tunneling)
 
 🔗 THÔNG TIN:
-  • Website:        https://vutrungocrong.fun
+  • Website:        https://bacsycay.click
   • Documentation:  https://github.com/proxvn/docs
   • Setup Guide:    DOMAIN_SETUP.md
 
@@ -318,14 +335,22 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 			defer db.Close() // ✅ This WILL run when main() exits
 			log.Printf("[database] SQLite3 initialized successfully")
 
-			// Seed default admin if no users exist
+			// Seed default admin if no users exist, using configured credentials
 			users, _ := db.GetAllUsers()
 			if len(users) == 0 {
-				log.Printf("[database] No users found. Creating default admin...")
-				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+				adminUser := cfg.Auth.AdminUsername
+				if adminUser == "" {
+					adminUser = "admin"
+				}
+				adminPass := cfg.Auth.AdminPassword
+				if adminPass == "" {
+					adminPass = "admin123"
+				}
+				log.Printf("[database] No users found. Creating default admin '%s'...", adminUser)
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(adminPass), bcrypt.DefaultCost)
 				admin := &models.User{
 					ID:       uuid.New(),
-					Username: "admin",
+					Username: adminUser,
 					Email:    "admin@proxvn.com",
 					Password: string(hashedPassword),
 					Role:     models.UserRoleAdmin,
@@ -333,24 +358,37 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 				}
 				if err := db.CreateUser(admin); err != nil {
 					log.Printf("[database] Failed to create default admin: %v", err)
+				} else if adminPass == "admin123" {
+					log.Printf("[database] ⚠️  Created default admin '%s' with INSECURE default password. Set ADMIN_PASSWORD!", adminUser)
 				} else {
-					log.Printf("[database] ✅ Created default admin: admin / admin123")
+					log.Printf("[database] ✅ Created admin '%s' from ADMIN_PASSWORD", adminUser)
 				}
 			}
 		}
 	}
 
+	var resStore ReservationStore
+	if db != nil {
+		resStore = NewSQLiteReservationStore(db)
+		log.Printf("[server] Initialized SQLite Reservation Store")
+	} else {
+		resStore = NewMemoryReservationStore()
+		log.Printf("[server] Initialized Memory Reservation Store (stateless)")
+	}
+
 	srv := &server{
-		listenPort:       *portFlag,
-		clients:          make(map[string]*clientSession),
-		availablePorts:   make([]int, 0, publicPortEnd-publicPortStart+1),
-		usedPorts:        make(map[int]bool),
-		portReservations: make(map[string]*portReservation),
-		udpSessions:      make(map[string]*udpServerSession),
-		proxyWaiting:     make(map[string]chan net.Conn),
-		httpRequests:     make(map[string]chan *httpproxy.HTTPResponse),
-		rateLimiters:     make(map[string]*rateLimiter),
-		connSemaphore:    make(chan struct{}, maxConnections),
+		listenPort:     *portFlag,
+		publicHost:     resolvePublicHost(cfg.Server.PublicHost),
+		clients:        make(map[string]*clientSession),
+		availablePorts: make([]int, 0, publicPortEnd-publicPortStart+1),
+		usedPorts:      make(map[int]bool),
+		reservations:   resStore,
+		udpSessions:    make(map[string]*udpServerSession),
+		udpClientAddrs: make(map[string]*net.UDPAddr),
+		proxyWaiting:   make(map[string]chan net.Conn),
+		httpRequests:   make(map[string]chan *httpproxy.HTTPResponse),
+		rateLimiters:   make(map[string]*rateLimiter),
+		connSemaphore:  make(chan struct{}, maxConnections),
 	}
 
 	srv.runtimeStart = time.Now()
@@ -364,15 +402,23 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 	// Start rate limiter cleanup goroutine
 	go srv.cleanupRateLimiters()
 
-	// Start port reservation cleanup goroutine
-	go srv.cleanupPortReservations()
+	// Start reservation cleanup ticker
+	startReservationCleanupTicker(resStore, srv)
 
 	// Start HTTP/API/Dashboard server (✅ pass db as param)
 	go srv.startHTTPServer(cfg, db)
 
 	// Initialize HTTP proxy for HTTP tunneling (if SSL cert available)
-	// Landing page will be served on main domain (vutrungocrong.fun) via HTTPS
+	// Landing page will be served on main domain (bacsycay.click) via HTTPS
 	go srv.initHTTPProxy(cfg)
+
+	// Catch OS signals for graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-stop
+		srv.Shutdown(db)
+	}()
 
 	// Run tunnel server
 	if err := srv.run(); err != nil {
@@ -402,30 +448,10 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	router.Use(middleware.LoggingMiddleware())
 	router.Use(middleware.RecoveryMiddleware())
 	router.Use(middleware.CORSMiddleware())
-
-	// Admin subdomain routing
-	if false { // cfg.HTTP.Domain != "" {
-		router.Use(func(c *gin.Context) {
-			host := c.Request.Host
-			adminDomain := "admin." // + cfg.HTTP.Domain
-
-			// Check if accessing via admin subdomain
-			if host == adminDomain || host == adminDomain+":8881" {
-				// Allow admin routes
-				c.Next()
-				return
-			}
-
-			// If accessing via main domain, redirect /dashboard to admin subdomain
-			if c.Request.URL.Path == "/dashboard" || c.Request.URL.Path == "/dashboard/" {
-				c.Redirect(http.StatusMovedPermanently, "https://"+adminDomain+"/dashboard/")
-				c.Abort()
-				return
-			}
-			c.Next()
-		})
-		// log.Printf("[admin] Admin panel accessible at: https://admin.%s", cfg.HTTP.Domain)
-	}
+	router.Use(middleware.RequestSizeLimitMiddleware(10)) // 10MB Limit
+	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.TimestampValidationMiddleware())
+	router.Use(middleware.GzipAndCacheMiddleware())
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -489,7 +515,23 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	// Public WebSocket endpoint for dashboard (no auth required)
 	router.GET("/api/v1/dashboard/ws", func(c *gin.Context) {
 		upgrader := websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool { return true },
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+				if origin == "" {
+					return true
+				}
+				if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") || strings.HasPrefix(origin, "https://localhost") {
+					return true
+				}
+				httpDomain := os.Getenv("HTTP_DOMAIN")
+				if httpDomain != "" {
+					cleanDomain := strings.TrimPrefix(httpDomain, ".")
+					if strings.HasSuffix(origin, cleanDomain) {
+						return true
+					}
+				}
+				return false
+			},
 		}
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -516,13 +558,29 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 
 	// Old Unprotected WS route removed
 
+	// Prometheus metrics endpoint
+	router.GET("/metrics", func(c *gin.Context) {
+		c.Header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+		var out strings.Builder
+		s.clientsMu.RLock()
+		activeTunnels := len(s.clients)
+		s.clientsMu.RUnlock()
+
+		out.WriteString(fmt.Sprintf("# HELP active_tunnels Number of active tunnels\n# TYPE active_tunnels gauge\nactive_tunnels %d\n", activeTunnels))
+		out.WriteString(fmt.Sprintf("# HELP active_connections Number of active connections\n# TYPE active_connections gauge\nactive_connections %d\n", atomic.LoadInt64(&s.activeConnections)))
+		out.WriteString(fmt.Sprintf("# HELP total_connections Total connections routed\n# TYPE total_connections counter\ntotal_connections %d\n", atomic.LoadUint64(&s.totalConnections)))
+		out.WriteString(fmt.Sprintf("# HELP total_bytes_up Total bytes uploaded\n# TYPE total_bytes_up counter\ntotal_bytes_up %d\n", atomic.LoadUint64(&s.totalBytesUp)))
+		out.WriteString(fmt.Sprintf("# HELP total_bytes_down Total bytes downloaded\n# TYPE total_bytes_down counter\ntotal_bytes_down %d\n", atomic.LoadUint64(&s.totalBytesDown)))
+		c.String(http.StatusOK, out.String())
+	})
+
 	// API routes (if database available)
 	if handlers != nil {
 		apiRouter := router.Group("/api")
 		{
 			// Public endpoints
-			apiRouter.POST("/auth/login", handlers.Login)
-			apiRouter.POST("/auth/register", handlers.Register)
+			apiRouter.POST("/auth/login", middleware.RateLimitMiddleware(3, 5), middleware.BruteForceProtectionMiddleware(), handlers.Login)
+			apiRouter.POST("/auth/register", middleware.RateLimitMiddleware(3, 5), handlers.Register)
 			apiRouter.GET("/metrics", handlers.GetMetrics)
 			apiRouter.GET("/health", handlers.Health)
 
@@ -599,6 +657,7 @@ func (s *server) run() error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on tunnel port %d: %w", tunnelPort, err)
 	}
+	s.listener = listener
 	defer listener.Close()
 
 	log.Printf("[tunnel] Tunnel server listening on port %d (TLS Enabled)", tunnelPort)
@@ -707,8 +766,7 @@ func (s *server) handleConnection(conn net.Conn) {
 	// Peek to see if it's empty or closed
 	if _, err := br.Peek(1); err != nil {
 		if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
-			// Only log real errors, not expected disconnects
-			// log.Printf("[server] connection peek error: %v", err)
+			_ = err
 		}
 		conn.Close()
 		return
@@ -732,6 +790,7 @@ func (s *server) handleConnection(conn net.Conn) {
 			conn:     conn,
 			enc:      &jsonWriter{enc: tunnel.NewEncoder(conn)},
 			dec:      &jsonReader{dec: dec}, // Pass the decoder with existing buffer state
+			state:    tunnel.NewStateMachine(),
 			lastSeen: time.Now(),
 			done:     make(chan struct{}),
 		}
@@ -770,6 +829,49 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 		return fmt.Errorf("expected register message, got: %s", msg.Type)
 	}
 
+	_ = session.state.TransitionTo(tunnel.StateConnecting)
+	_ = session.state.TransitionTo(tunnel.StateTLSHandshake)
+	_ = session.state.TransitionTo(tunnel.StateAuthenticating)
+
+	clientID := strings.TrimSpace(msg.ClientID)
+	if clientID == "" {
+		if strings.TrimSpace(msg.Key) != "" {
+			clientID = fmt.Sprintf("client-%s", strings.TrimSpace(msg.Key)[:8])
+		} else {
+			clientID = "client-unknown"
+		}
+	}
+
+	// Force disconnect old session of same clientID if exists and newer generation ID is received
+	s.clientsMu.Lock()
+	oldSession, exists := s.clients[clientID]
+	s.clientsMu.Unlock()
+
+	if exists && oldSession != nil {
+		if msg.Generation <= oldSession.generation {
+			log.Printf("[server] Rejecting registration from client %s with older/same generation %d <= %d", clientID, msg.Generation, oldSession.generation)
+			return fmt.Errorf("stale generation ID %d", msg.Generation)
+		}
+
+		log.Printf("[server] Client ID %s is reconnecting with newer generation %d (closing old session generation %d)", clientID, msg.Generation, oldSession.generation)
+
+		s.unregisterHTTPClient(oldSession)
+		_ = oldSession.state.TransitionTo(tunnel.StateClosed)
+		oldSession.Close()
+
+		if oldSession.publicPort > 0 {
+			_ = s.reservations.ReservePort(oldSession.key, oldSession.publicPort, 5*time.Minute)
+			s.releasePort(oldSession.publicPort)
+		}
+		if oldSession.protocol == "http" && oldSession.subdomain != "" {
+			_ = s.reservations.ReserveSubdomain(oldSession.key, oldSession.subdomain, 5*time.Minute)
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	_ = session.state.TransitionTo(tunnel.StateRegistering)
+
 	// Generate key if not provided
 	key := strings.TrimSpace(msg.Key)
 	if key == "" {
@@ -783,10 +885,7 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 	// Assign public port (try to honor requested port for reconnecting clients)
 	publicPort := s.getNextPublicPort(key, msg.RequestedPort)
 
-	session.clientID = strings.TrimSpace(msg.ClientID)
-	if session.clientID == "" {
-		session.clientID = fmt.Sprintf("client-%s", key[:8])
-	}
+	session.clientID = clientID
 	session.key = key
 	session.target = msg.Target
 	session.protocol = strings.ToLower(strings.TrimSpace(msg.Protocol))
@@ -794,6 +893,7 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 		session.protocol = "tcp"
 	}
 	session.publicPort = publicPort
+	session.generation = msg.Generation
 
 	// Register client
 	s.addClient(session)
@@ -840,13 +940,18 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 	}
 
 	if session.protocol == "http" {
-		log.Printf("[server] client %s registered, HTTP mode, subdomain: %s.vutrungocrong.fun, target %s",
-			session.clientID, session.subdomain, session.target)
+		logDomain := baseDomain
+		if logDomain == "" {
+			logDomain = "bacsycay.click"
+		}
+		log.Printf("[server] client %s registered, HTTP mode, subdomain: %s.%s, target %s",
+			session.clientID, session.subdomain, logDomain, session.target)
 	} else {
 		log.Printf("[server] client %s registered, public port %d, protocol %s, target %s",
 			session.clientID, publicPort, session.protocol, session.target)
 	}
 
+	_ = session.state.TransitionTo(tunnel.StateActive)
 	// Start heartbeat checker
 	go s.heartbeatChecker(session)
 
@@ -854,9 +959,11 @@ func (s *server) handleClient(session *clientSession, msg tunnel.Message) error 
 	s.logOnce(fmt.Sprintf("[server] active sessions: %d", atomic.LoadInt64(&s.activeConnections)), "active_sessions")
 	defer atomic.AddInt64(&s.activeConnections, -1)
 
-	// Start public listener for TCP
+	// Start public listener for TCP / UDP
 	if session.protocol == "tcp" {
 		go s.startPublicListener(session)
+	} else if session.protocol == "udp" {
+		go s.startPublicUDPListener(session)
 	}
 
 	// Handle control messages
@@ -947,6 +1054,151 @@ func (s *server) startPublicListener(session *clientSession) {
 	}
 }
 
+// startPublicUDPListener opens a public UDP socket on the tunnel's allocated
+// public port and bridges external UDP peers to the client. Each distinct
+// external peer (source addr) becomes a udpServerSession: the server tells the
+// client to dial its local backend (udp_open), relays peer→client packets via
+// the UDP control channel, and writes client→peer replies back out this socket.
+func (s *server) startPublicUDPListener(session *clientSession) {
+	listenAddr := fmt.Sprintf(":%d", session.publicPort)
+	udpAddr, err := net.ResolveUDPAddr("udp", listenAddr)
+	if err != nil {
+		log.Printf("[server] invalid UDP public addr %s: %v", listenAddr, err)
+		return
+	}
+	pc, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		log.Printf("[server] failed to listen on public UDP port %d: %v", session.publicPort, err)
+		return
+	}
+	_ = pc.SetReadBuffer(4 * 1024 * 1024)
+	_ = pc.SetWriteBuffer(4 * 1024 * 1024)
+
+	session.mu.Lock()
+	select {
+	case <-session.done:
+		session.mu.Unlock()
+		pc.Close()
+		return
+	default:
+		session.publicUDPConn = pc
+	}
+	session.mu.Unlock()
+
+	defer pc.Close()
+	log.Printf("[server] public UDP listener started on port %d for client %s", session.publicPort, session.clientID)
+
+	// extAddr string -> session ID, owned by this goroutine + the GC ticker.
+	peers := make(map[string]string)
+	var peersMu sync.Mutex
+
+	// Idle GC: drop external peers that have gone quiet so sessions don't leak.
+	gcStop := make(chan struct{})
+	defer close(gcStop)
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-gcStop:
+				return
+			case <-session.done:
+				return
+			case <-ticker.C:
+				now := time.Now()
+				peersMu.Lock()
+				for ext, id := range peers {
+					s.udpMu.Lock()
+					sess := s.udpSessions[id]
+					s.udpMu.Unlock()
+					if sess == nil || now.Sub(sess.lastActive) > clientIdleTimeout {
+						delete(peers, ext)
+						s.sendUDPClose(session.key, id)
+						s.handleUDPClose(id)
+					}
+				}
+				peersMu.Unlock()
+			}
+		}
+	}()
+
+	buf := make([]byte, 65535)
+	for {
+		n, extAddr, err := pc.ReadFromUDP(buf)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) || strings.Contains(err.Error(), "use of closed network connection") {
+				return
+			}
+			log.Printf("[server] public UDP read error on port %d: %v", session.publicPort, err)
+			return
+		}
+		if n == 0 {
+			continue
+		}
+
+		key := extAddr.String()
+		peersMu.Lock()
+		sessID, known := peers[key]
+		peersMu.Unlock()
+
+		if debugServerUDP {
+			log.Printf("[server] inbound UDP %d bytes from peer %s on port %d (known=%v)", n, key, session.publicPort, known)
+		}
+		if !known {
+			if !s.checkUDPSessionRateLimit(session.remoteIP) {
+				continue
+			}
+			id, gerr := tunnel.GenerateID()
+			if gerr != nil {
+				continue
+			}
+			sessID = id
+			us := &udpServerSession{
+				id:         sessID,
+				clientKey:  session.key,
+				udpSecret:  session.udpSecret,
+				inbound:    true,
+				publicConn: pc,
+				extAddr:    extAddr,
+				lastActive: time.Now(),
+				closed:     make(chan struct{}),
+			}
+			s.udpMu.Lock()
+			s.udpSessions[sessID] = us
+			s.udpMu.Unlock()
+
+			peersMu.Lock()
+			peers[key] = sessID
+			peersMu.Unlock()
+
+			// Tell the client to open a backend UDP connection for this peer.
+			if debugServerUDP {
+				log.Printf("[server] inbound UDP new session %s -> sending udp_open to client", sessID)
+			}
+			if err := session.enc.Encode(tunnel.Message{Type: "udp_open", ID: sessID, Protocol: "udp"}); err != nil {
+				s.handleUDPClose(sessID)
+				peersMu.Lock()
+				delete(peers, key)
+				peersMu.Unlock()
+				continue
+			}
+		}
+
+		// Refresh activity so the idle GC keeps live peers alive.
+		s.udpMu.Lock()
+		if us := s.udpSessions[sessID]; us != nil {
+			us.lastActive = time.Now()
+		}
+		s.udpMu.Unlock()
+
+		payload := make([]byte, n)
+		copy(payload, buf[:n])
+		if err := s.sendUDPData(session.key, sessID, payload); err != nil && debugServerUDP {
+			log.Printf("[server] inbound UDP forward to client failed: %v", err)
+		}
+	}
+}
+
 func (s *server) handlePublicConnection(session *clientSession, publicConn net.Conn) {
 	defer publicConn.Close()
 
@@ -1019,8 +1271,9 @@ func proxyCopy(dst, src net.Conn, counter *uint64, totalCounter *uint64) {
 	defer dst.Close()
 	defer src.Close()
 
-	// Copy buffer
-	buf := make([]byte, 32*1024)
+	buf := pool.GlobalBufferPool.Get(32 * 1024)
+	defer pool.GlobalBufferPool.Put(buf)
+
 	for {
 		nr, er := src.Read(buf)
 		if nr > 0 {
@@ -1090,7 +1343,6 @@ func (s *server) cancelProxyConnection(proxyID string) {
 
 func (s *server) handleProxyRequest(session *clientSession, proxyID string) {
 	// This is just a notification log if needed, logic is in handlePublicConnection
-	// log.Printf("[server] proxy request for ID %s sent", proxyID)
 }
 
 func (s *server) handleUDPOpen(session *clientSession, msg tunnel.Message) {
@@ -1227,9 +1479,15 @@ func (s *server) handleUDPControlPacket(packet []byte, addr *net.UDPAddr) {
 		return
 	}
 
+	// Remember this client's UDP control address so inbound (public→client)
+	// sessions can reach it even before the client has sent session data.
+	s.udpMu.Lock()
+	s.udpClientAddrs[key] = addr
+	s.udpMu.Unlock()
+
 	switch msgType {
 	case udpMsgHandshake:
-		s.sendUDPResponse(addr, udpMsgHandshake, key, "", nil)
+		_ = s.sendUDPResponse(addr, udpMsgHandshake, key, "", nil)
 	case udpMsgData:
 		id, next, ok := decodeUDPField(packet, idx)
 		if !ok || id == "" {
@@ -1249,7 +1507,7 @@ func (s *server) handleUDPControlPacket(packet []byte, addr *net.UDPAddr) {
 	case udpMsgPing:
 		payload := make([]byte, len(packet)-idx)
 		copy(payload, packet[idx:])
-		s.sendUDPResponse(addr, udpMsgPong, key, "", payload)
+		_ = s.sendUDPResponse(addr, udpMsgPong, key, "", payload)
 	}
 }
 
@@ -1267,6 +1525,7 @@ func (s *server) handleUDPDataFromClient(clientKey, sessionID string, payload []
 	if session.clientAddr == nil || session.clientAddr.String() != clientAddr.String() {
 		session.clientAddr = clientAddr
 	}
+	session.lastActive = time.Now()
 
 	// Decrypt if secret is available
 	if session.udpSecret != nil {
@@ -1278,6 +1537,24 @@ func (s *server) handleUDPDataFromClient(clientKey, sessionID string, payload []
 		payload = decrypted
 	}
 
+	// Inbound session: reply goes back out the public socket to the external peer.
+	if session.inbound {
+		if session.publicConn == nil || session.extAddr == nil {
+			return
+		}
+		if _, err := session.publicConn.WriteToUDP(payload, session.extAddr); err != nil {
+			if debugServerUDP {
+				log.Printf("[server] failed to write UDP to peer for session %s: %v", sessionID, err)
+			}
+			s.handleUDPClose(sessionID)
+		}
+		return
+	}
+
+	// Outbound session: forward to the dialed remote.
+	if session.conn == nil {
+		return
+	}
 	if _, err := session.conn.Write(payload); err != nil {
 		log.Printf("[server] failed to write UDP to remote for session %s: %v", sessionID, err)
 		s.handleUDPClose(sessionID)
@@ -1302,14 +1579,36 @@ func (s *server) sendUDPData(clientKey, sessionID string, payload []byte) error 
 		payload = encrypted
 	}
 
-	// Must have client address to send back
-	if session.clientAddr == nil {
-		// Drop packet if we don't know where to send (Client hasn't sent data yet)
-		// logic: client must initiate conversation
+	// Resolve where to send: the session's learned client addr, or the last
+	// known UDP control addr for this client (needed for inbound sessions
+	// before the client has replied on this particular session).
+	dst := session.clientAddr
+	if dst == nil {
+		s.udpMu.Lock()
+		dst = s.udpClientAddrs[clientKey]
+		s.udpMu.Unlock()
+	}
+	if debugServerUDP {
+		log.Printf("[server] sendUDPData session=%s clientKey=%q dst=%v sessionAddr=%v", sessionID, clientKey, dst, session.clientAddr)
+	}
+	if dst == nil {
+		// Don't know where the client is yet; drop.
 		return nil
 	}
 
-	return s.writeUDP(udpMsgData, clientKey, sessionID, payload, session.clientAddr)
+	return s.writeUDP(udpMsgData, clientKey, sessionID, payload, dst)
+}
+
+// sendUDPClose notifies the client that a UDP session is finished so it can
+// tear down the matching backend connection.
+func (s *server) sendUDPClose(clientKey, sessionID string) {
+	s.udpMu.Lock()
+	dst := s.udpClientAddrs[clientKey]
+	s.udpMu.Unlock()
+	if dst == nil {
+		return
+	}
+	_ = s.writeUDP(udpMsgClose, clientKey, sessionID, nil, dst)
 }
 
 func (s *server) sendUDPResponse(addr *net.UDPAddr, msgType byte, key, id string, payload []byte) error {
@@ -1359,25 +1658,22 @@ func (s *server) addClient(session *clientSession) {
 }
 
 func (s *server) removeClient(session *clientSession) {
+	_ = session.state.TransitionTo(tunnel.StateClosed)
 	s.clientsMu.Lock()
 	existingSession, exists := s.clients[session.clientID]
 	if exists && existingSession == session {
 		delete(s.clients, session.clientID)
 
-		// Create port reservation instead of releasing immediately
-		// This allows the client to reconnect and get the same port within 5 minutes
+		// Create port & subdomain reservation instead of releasing immediately
 		if session.publicPort > 0 && session.key != "" {
-			s.reservationMu.Lock()
-			s.portReservations[session.key] = &portReservation{
-				port:      session.publicPort,
-				expiresAt: time.Now().Add(5 * time.Minute), // 5 minute grace period
-			}
-			s.reservationMu.Unlock()
+			_ = s.reservations.ReservePort(session.key, session.publicPort, 5*time.Minute)
 			log.Printf("[server] Reserved port %d for client %s (key: %s) for 5 minutes",
 				session.publicPort, session.clientID, session.key)
-
-			// Still release the port back to pool, but keep reservation
-			s.releasePort(session.publicPort)
+		}
+		if session.protocol == "http" && session.subdomain != "" && session.key != "" {
+			_ = s.reservations.ReserveSubdomain(session.key, session.subdomain, 5*time.Minute)
+			log.Printf("[server] Reserved subdomain %s for client %s (key: %s) for 5 minutes",
+				session.subdomain, session.clientID, session.key)
 		}
 	}
 	s.clientsMu.Unlock()
@@ -1399,7 +1695,7 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 	var totalUp, totalDown uint64
 
 	// Get base domain for HTTP tunnels
-	baseDomain := "vutrungocrong.fun"
+	baseDomain := ""
 	if s.httpProxy != nil {
 		baseDomain = s.httpProxy.GetBaseDomain()
 	}
@@ -1415,7 +1711,7 @@ func (s *server) sendDashboardUpdate(conn *websocket.Conn) error {
 		}
 
 		// Display subdomain for HTTP tunnels, IP:port for others
-		publicHost := fmt.Sprintf("103.77.246.206:%d", session.publicPort)
+		publicHost := fmt.Sprintf("%s:%d", s.publicHost, session.publicPort)
 		if session.protocol == "http" && session.subdomain != "" {
 			publicHost = fmt.Sprintf("https://%s.%s", session.subdomain, baseDomain)
 		}
@@ -1488,20 +1784,36 @@ func (s *server) logOnce(message, key string, cooldown ...time.Duration) {
 	log.Println(message)
 }
 
+func (s *server) isPortInActiveUse(port int) bool {
+	s.clientsMu.RLock()
+	defer s.clientsMu.RUnlock()
+	for _, sess := range s.clients {
+		if sess.publicPort == port {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *server) getNextPublicPort(clientKey string, requestedPort int) int {
 	s.portMu.Lock()
 	defer s.portMu.Unlock()
 
+	// Check if requested port is reserved by another client
+	if requestedPort > 0 {
+		reservedByOther, err := s.reservations.IsPortReservedByOther(requestedPort, clientKey)
+		if err == nil && reservedByOther {
+			log.Printf("[server] Requested port %d is reserved by another client", requestedPort)
+			requestedPort = 0
+		}
+	}
+
 	// Check if client has a valid reservation
 	if requestedPort > 0 && clientKey != "" {
-		s.reservationMu.Lock()
-		reservation, hasReservation := s.portReservations[clientKey]
-		s.reservationMu.Unlock()
-
-		if hasReservation && reservation.port == requestedPort && time.Now().Before(reservation.expiresAt) {
-			// Port is reserved for this client and not expired
-			// Check if it's actually available
-			if !s.usedPorts[requestedPort] {
+		reservedPort, exists, err := s.reservations.GetReservedPort(clientKey)
+		if err == nil && exists && reservedPort == requestedPort {
+			// Check if port is in active use
+			if !s.isPortInActiveUse(requestedPort) {
 				// Find and remove from availablePorts
 				for i, p := range s.availablePorts {
 					if p == requestedPort {
@@ -1510,11 +1822,7 @@ func (s *server) getNextPublicPort(clientKey string, requestedPort int) int {
 					}
 				}
 				s.usedPorts[requestedPort] = true
-
-				// Clear reservation since it's now in use
-				s.reservationMu.Lock()
-				delete(s.portReservations, clientKey)
-				s.reservationMu.Unlock()
+				_ = s.reservations.DeleteReservation(clientKey) // consume it
 
 				log.Printf("[server] Assigned reserved port %d to client %s", requestedPort, clientKey)
 				return requestedPort
@@ -1565,7 +1873,17 @@ func (session *clientSession) Close() {
 		if session.publicListener != nil {
 			session.publicListener.Close()
 		}
+		if session.publicUDPConn != nil {
+			session.publicUDPConn.Close()
+		}
 		session.mu.Unlock()
+
+		// Forget this client's UDP control address.
+		if session.server != nil && session.key != "" {
+			session.server.udpMu.Lock()
+			delete(session.server.udpClientAddrs, session.key)
+			session.server.udpMu.Unlock()
+		}
 	})
 }
 
@@ -1593,11 +1911,33 @@ func decodeUDPField(packet []byte, offset int) (string, int, bool) {
 	return string(packet[offset : offset+l]), offset + l, true
 }
 
-// Buffer pool for reducing memory allocations
-var bufferPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, bufferSize)
-	},
+// resolvePublicHost returns the public host/IP advertised to clients for
+// TCP/UDP tunnels. It prefers the configured value (PUBLIC_HOST), then falls
+// back to auto-detecting the outbound IP, and finally to 127.0.0.1.
+func resolvePublicHost(configured string) string {
+	if configured != "" {
+		return configured
+	}
+	if ip := detectOutboundIP(); ip != "" {
+		log.Printf("[server] PUBLIC_HOST not set, auto-detected public host: %s", ip)
+		return ip
+	}
+	log.Printf("[server] PUBLIC_HOST not set and auto-detection failed, falling back to 127.0.0.1")
+	return "127.0.0.1"
+}
+
+// detectOutboundIP determines the local address used for outbound traffic
+// without sending any packets (UDP "connect" only sets the route).
+func detectOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return ""
+	}
+	defer conn.Close()
+	if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
+		return addr.IP.String()
+	}
+	return ""
 }
 
 func buildUDPMessage(msgType byte, key, id string, payload []byte) []byte {
@@ -1621,4 +1961,67 @@ func buildUDPMessage(msgType byte, key, id string, payload []byte) []byte {
 	}
 	copy(buf[offset:], payload)
 	return buf
+}
+
+func (s *server) Shutdown(db *database.Database) {
+	log.Println("[server] Bắt đầu tắt server an toàn...")
+
+	// 1. Close main tunnel listener to stop accepting new tunnels
+	if s.listener != nil {
+		log.Println("[server] Đang đóng TCP listener...")
+		s.listener.Close()
+	}
+	if s.udpServer != nil {
+		log.Println("[server] Đang đóng UDP listener...")
+		s.udpServer.Close()
+	}
+	if s.httpServer != nil {
+		log.Println("[server] Đang đóng HTTP Dashboard server...")
+		s.httpServer.Close()
+	}
+
+	// 2. Disconnect and persist active clients
+	s.clientsMu.Lock()
+	log.Printf("[server] Đang ngắt kết nối và bảo lưu trạng thái %d client active...", len(s.clients))
+	for _, client := range s.clients {
+		if client.publicPort > 0 && client.key != "" {
+			_ = s.reservations.ReservePort(client.key, client.publicPort, 5*time.Minute)
+		}
+		if client.protocol == "http" && client.subdomain != "" && client.key != "" {
+			_ = s.reservations.ReserveSubdomain(client.key, client.subdomain, 5*time.Minute)
+		}
+		client.Close()
+	}
+	s.clientsMu.Unlock()
+
+	// 3. Flush database WAL cache
+	if db != nil {
+		log.Println("[database] Thực hiện SQLite checkpoint...")
+		if _, err := db.GetDB().Exec("PRAGMA wal_checkpoint(PASSIVE);"); err != nil {
+			log.Printf("[database] Lỗi checkpoint WAL: %v", err)
+		}
+	}
+
+	log.Println("[server] ✅ Tắt server hoàn tất. Tạm biệt!")
+	os.Exit(0)
+}
+
+type MaskedWriter struct {
+	underlying io.Writer
+}
+
+func NewMaskedWriter(underlying io.Writer) *MaskedWriter {
+	return &MaskedWriter{underlying: underlying}
+}
+
+func (mw *MaskedWriter) Write(p []byte) (n int, err error) {
+	str := string(p)
+	str = regexp.MustCompile(`(?i)bearer\s+[A-Za-z0-9-_=\.]+`).ReplaceAllString(str, "Bearer [REDACTED]")
+	str = regexp.MustCompile(`(?i)token[=:\s"]+[A-Za-z0-9-_=\.]+`).ReplaceAllString(str, "token=[REDACTED]")
+	str = regexp.MustCompile(`(?i)password[=:\s"]+[a-zA-Z0-9-_]+`).ReplaceAllString(str, "password=[REDACTED]")
+	str = regexp.MustCompile(`(?i)cookie[=:\s"]+[a-zA-Z0-9-_]+`).ReplaceAllString(str, "cookie=[REDACTED]")
+	str = regexp.MustCompile(`(?i)api_key[=:\s"]+[a-zA-Z0-9-_]+`).ReplaceAllString(str, "api_key=[REDACTED]")
+
+	_, err = mw.underlying.Write([]byte(str))
+	return len(p), err
 }

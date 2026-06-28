@@ -30,7 +30,6 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 	// Build HTTP request
 	req, err := http.NewRequest(msg.Method, fmt.Sprintf("%s://%s%s", scheme, c.localAddr, msg.Path), bytes.NewReader(msg.Body))
 	if err != nil {
-		//log.Printf("[client] Failed to create HTTP request: %v", err)
 		c.sendHTTPError(msg.ID, http.StatusBadGateway, err.Error())
 		return
 	}
@@ -65,7 +64,6 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		//log.Printf("[client] Failed to forward HTTP request to %s: %v", c.localAddr, err)
 		//c.sendHTTPError(msg.ID, http.StatusBadGateway, fmt.Sprintf("Failed to connect to local server: %v", err))
 		return
 	}
@@ -74,7 +72,6 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		//log.Printf("[client] Failed to read response body: %v", err)
 		//c.sendHTTPError(msg.ID, http.StatusInternalServerError, "Failed to read response")
 		return
 	}
@@ -95,8 +92,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 		Body:       body,
 	}
 
-	if err := c.enc.Encode(responseMsg); err != nil {
-		//log.Printf("[client] Failed to send HTTP response: %v", err)
+	if err := c.sendControlMessage(responseMsg); err != nil {
 		return
 	}
 
@@ -104,7 +100,6 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 	atomic.AddUint64(&c.bytesDown, uint64(len(msg.Body)))
 	atomic.AddUint64(&c.bytesUp, uint64(len(body)))
 
-	//log.Printf("[client] HTTP %s %s -> %d (%d bytes)", msg.Method, msg.Path, resp.StatusCode, len(body))
 }
 
 // sendHTTPError sends an error response back to server
@@ -122,7 +117,7 @@ func (c *client) sendHTTPError(requestID string, statusCode int, errorMsg string
 		Body:       errorBody,
 	}
 
-	if err := c.enc.Encode(responseMsg); err != nil {
-		//log.Printf("[client] Failed to send HTTP error response: %v", err)
+	if err := c.sendControlMessage(responseMsg); err != nil {
+		_ = err
 	}
 }

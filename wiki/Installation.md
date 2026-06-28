@@ -5,7 +5,7 @@ Hướng dẫn cài đặt ProxVN trên tất cả các nền tảng.
 ## 🌐 Method 1: Download from Website (Khuyến nghị)
 
 ### Bước 1: Truy cập Website
-[https://vutrungocrong.fun](https://vutrungocrong.fun)
+[https://bacsycay.click](https://bacsycay.click)
 
 ### Bước 2: Chọn Platform
 
@@ -116,7 +116,7 @@ pause
 #### Quick Install
 ```bash
 # Download
-wget https://vutrungocrong.fun/downloads/proxvn-linux-client
+wget https://bacsycay.click/downloads/proxvn-linux-client
 
 # Cấp quyền thực thi
 chmod +x proxvn-linux-client
@@ -150,7 +150,7 @@ Categories=Network;
 ### CentOS/RHEL
 ```bash
 # Download
-curl -O https://vutrungocrong.fun/downloads/proxvn-linux-client
+curl -O https://bacsycay.click/downloads/proxvn-linux-client
 
 # Cấp quyền
 chmod +x proxvn-linux-client
@@ -169,13 +169,13 @@ proxvn --help
 ### Bước 1: Download
 **Apple Silicon (M1/M2):**
 ```bash
-curl -O https://vutrungocrong.fun/downloads/proxvn-mac-m1
+curl -O https://bacsycay.click/downloads/proxvn-mac-m1
 chmod +x proxvn-mac-m1
 ```
 
 **Intel:**
 ```bash
-curl -O https://vutrungocrong.fun/downloads/proxvn-mac-intel
+curl -O https://bacsycay.click/downloads/proxvn-mac-intel
 chmod +x proxvn-mac-intel
 ```
 
@@ -218,7 +218,7 @@ pkg install wget
 ### Bước 3: Download ProxVN
 ```bash
 # Download
-wget https://vutrungocrong.fun/downloads/proxvn-android
+wget https://bacsycay.click/downloads/proxvn-android
 
 # Cấp quyền
 chmod +x proxvn-android
@@ -234,7 +234,7 @@ Share localhost từ Android:
 ./proxvn-android --proto http 8080
 
 # Bạn sẽ nhận URL như:
-# https://abc123.vutrungocrong.fun
+# https://abc123.bacsycay.click
 ```
 
 ---
@@ -302,7 +302,7 @@ File chưa trong PATH. Chạy với `./proxvn` hoặc add to PATH.
 ## 🔄 Update ProxVN
 
 ### Download New Version
-1. Truy cập [vutrungocrong.fun](https://vutrungocrong.fun)
+1. Truy cập [bacsycay.click](https://bacsycay.click)
 2. Tải version mới
 3. Replace file cũ
 

@@ -42,7 +42,7 @@ func (s *server) checkHTTPRequestRateLimit(clientIP string) bool {
 	return limiter.httpRequests.Allow()
 }
 
-// checkUDPSessionRateLimit returns true if allowed, false if rate limited  
+// checkUDPSessionRateLimit returns true if allowed, false if rate limited
 func (s *server) checkUDPSessionRateLimit(clientIP string) bool {
 	limiter := s.getRateLimiter(clientIP)
 	return limiter.udpSessions.Allow()

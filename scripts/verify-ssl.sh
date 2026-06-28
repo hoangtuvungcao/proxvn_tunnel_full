@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Switch to project root
 cd "$(dirname "$0")/.."
 
-DOMAIN=${1:-vutrungocrong.fun}
+DOMAIN=${1:-bacsycay.click}
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║       ProxVN SSL Certificate Verification             ║${NC}"

@@ -246,7 +246,6 @@ func (p *HTTPProxyServer) handleRequest(w http.ResponseWriter, r *http.Request) 
 		log.Printf("[http] Failed to write response: %v", err)
 	}
 
-	//log.Printf("[http] %s %s %s -> %d (%s)", r.Method, subdomain, r.URL.Path, response.StatusCode, client.GetID())
 }
 
 // isMainDomain checks if the host is the main domain (without subdomain)

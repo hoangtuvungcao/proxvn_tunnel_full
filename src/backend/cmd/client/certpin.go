@@ -50,10 +50,11 @@ func (c *client) buildTLSConfig() *tls.Config {
 
 	// If certificate pinning is requested, enforce strict validation
 	if c.certFingerprint != "" {
+		config.SessionTicketsDisabled = true
 		config.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			return verifyCertFingerprint(rawCerts, c.certFingerprint)
 		}
-		log.Printf("[client] 🔐 Certificate pinning enabled")
+		log.Printf("[client] Certificate pinning enabled")
 	}
 
 	return config

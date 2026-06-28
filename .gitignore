@@ -1,32 +1,50 @@
-# Binaries
+# ===== Binaries & build artifacts =====
 *.exe~
 *-test.exe
+bin/*.zip
+# Compiled cmd binaries (rebuilt via build-all.sh)
+src/backend/cmd/server/server
+src/backend/cmd/client/client
+src/backend/cmd/loadtest/loadtest
+src/backend/cmd/fileserver/fileserver
 
-# Certificates
+# ===== Certificates & keys =====
 *.crt
 *.key
 *.pem
+wildcard.*
+cloudflare.ini
 
-# Environment
+# ===== Environment =====
 .env
 .env.local
+.env.server
 
-# Logs
+# ===== Runtime data (created by server/docker at runtime) =====
+/data/
+/backups/
+/logs/
+/ssl/
+*.db
+*.db-shm
+*.db-wal
+
+# ===== Logs =====
 *.log
 
-# OS
+# ===== OS =====
 .DS_Store
 Thumbs.db
 
-# IDE
+# ===== IDE =====
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Temporary
+# ===== Temporary =====
 temp/
 tmp/
 
-# Build artifacts
-bin/*.zip
+# Claude Code local session state
+.claude/

@@ -1,0 +1,29 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+
+issues:
+  exclude-rules:
+    # Exclude unused warnings from client and server main files as they contain legacy utilities
+    - path: (cmd/client/.*\.go|cmd/server/.*\.go|internal/middleware/.*\.go)
+      linters:
+        - unused
+    # Exclude errcheck warnings in legacy handlers/cache middlewares
+    - path: (cmd/fileserver/.*\.go|internal/cache/.*\.go|internal/http/.*\.go)
+      linters:
+        - errcheck
+    # Exclude SA1019 ne.Temporary deprecation warnings in server connection handling loop
+    - text: "SA1019"
+      linters:
+        - staticcheck

@@ -27,10 +27,10 @@ import (
 )
 
 const (
-	defaultServerAddr  = "103.77.246.206:8882"
+	defaultServerAddr  = "103.77.246.196:8882"
 	defaultLocalHost   = "localhost"
 	defaultLocalPort   = 80
-	heartbeatInterval  = 2 * time.Second // Faster detection
+	heartbeatInterval  = 5 * time.Second // Faster detection
 	backendIdleTimeout = 5 * time.Second
 	backendIdleRetries = 3
 	udpControlInterval = 2 * time.Second
@@ -60,6 +60,11 @@ type client struct {
 	certFingerprint    string // Optional: Server certificate fingerprint for pinning
 	insecureSkipVerify bool   // Skip TLS certificate verification
 	uiEnabled          bool
+	generation         int64
+	state              *tunnel.StateMachine
+	ctrlQueue          *tunnel.ControlMessageQueue
+	rttMu              sync.Mutex
+	rtt                time.Duration
 
 	// Control connection
 	control        net.Conn
@@ -179,19 +184,19 @@ func main() {
   proxvn --proto http 80              # Share website port 80
   proxvn --proto http 3000            # Share Node.js/React app
   proxvn --proto http 443             # Tunnel local HTTPS site
-  → Kết quả: https://abc123.vutrungocrong.fun
+  → Kết quả: https://abc123.bacsycay.click
 
 ▶ TCP Tunnel - Nhận IP:Port:
   proxvn 80                           # Public web server
   proxvn 3389                         # Remote Desktop (RDP)
   proxvn 22                           # SSH server
-  → Kết quả: 103.77.246.206:10000
+  → Kết quả: 103.77.246.196:10000
 
 ▶ UDP Tunnel - Game Server:
   proxvn --proto udp 19132            # Minecraft Bedrock Edition
   proxvn --proto udp 25565            # Minecraft Java (UDP mode)
   proxvn --proto udp 7777             # Palworld server
-  → Kết quả: 103.77.246.206:10000
+  → Kết quả: 103.77.246.196:10000
 
 ▶ File Sharing - Chia Sẻ File/Folder:
   proxvn --file /home/user/Documents --pass matkhau123
@@ -203,7 +208,7 @@ func main() {
   proxvn --server YOUR_VPS_IP:8882 --proto http 80
 
 🔗 THÔNG TIN:
-  • Website:        https://vutrungocrong.fun
+  • Website:        https://bacsycay.click
   • Documentation:  https://github.com/hoangtuvungcao/proxvn_tunnel
   • Issues:         https://github.com/hoangtuvungcao/proxvn_tunnel/issues
 
@@ -213,7 +218,7 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 `)
 	}
 
-	serverAddr := flag.String("server", defaultServerAddr, "Địa chỉ tunnel server (mặc định: 103.77.246.206:8882)")
+	serverAddr := flag.String("server", defaultServerAddr, "Địa chỉ tunnel server (mặc định: 103.77.246.196:8882)")
 	hostFlag := flag.String("host", defaultLocalHost, "Host nội bộ cần tunnel (mặc định: localhost)")
 	portFlag := flag.Int("port", defaultLocalPort, "Port nội bộ (bị ghi đè nếu truyền trực tiếp)")
 	id := flag.String("id", "", "Client ID (optional)")
@@ -298,6 +303,8 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 		protocol:        protocol,
 		certFingerprint: strings.ToLower(strings.TrimSpace(*certPin)),
 		uiEnabled:       *UI && term.IsTerminal(int(os.Stdout.Fd())),
+		state:           tunnel.NewStateMachine(),
+		ctrlQueue:       tunnel.NewControlMessageQueue(),
 	}
 
 	if err := cl.run(); err != nil {
@@ -306,17 +313,22 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 }
 
 func (c *client) run() error {
-	// ✅ FIX: Exponential backoff để tránh spam reconnect
-	backoff := 3 * time.Second
-	maxBackoff := 5 * time.Minute
+	backoff := 2 * time.Second
+	maxBackoff := 30 * time.Second
 
 	for {
+		_ = c.state.TransitionTo(tunnel.StateConnecting)
 		if err := c.connectControl(); err != nil {
 			log.Printf("[client] kết nối control thất bại: %v", err)
-			log.Printf("[client] retry sau %v...", backoff)
-			time.Sleep(backoff)
 
-			// ✅ Exponential backoff: double mỗi lần fail, max 5 phút
+			// Calculate backoff with jitter
+			jitter := time.Duration(time.Now().UnixNano() % int64(500*time.Millisecond))
+			sleepTime := backoff + jitter
+			log.Printf("[client] retry sau %v...", sleepTime)
+
+			_ = c.state.TransitionTo(tunnel.StateReconnecting)
+			time.Sleep(sleepTime)
+
 			backoff *= 2
 			if backoff > maxBackoff {
 				backoff = maxBackoff
@@ -324,8 +336,8 @@ func (c *client) run() error {
 			continue
 		}
 
-		// ✅ Reset backoff khi kết nối thành công
-		backoff = 3 * time.Second
+		// Reset backoff on success
+		backoff = 2 * time.Second
 
 		if err := c.receiveLoop(); err != nil {
 			log.Printf("[client] control lỗi: %v", err)
@@ -335,8 +347,9 @@ func (c *client) run() error {
 			return nil
 		}
 
-		log.Printf("[client] thử reconnect control...")
-		time.Sleep(backoff)
+		_ = c.state.TransitionTo(tunnel.StateReconnecting)
+		jitter := time.Duration(time.Now().UnixNano() % int64(500*time.Millisecond))
+		time.Sleep(backoff + jitter)
 	}
 }
 
@@ -389,12 +402,20 @@ func (c *client) connectControl() error {
 		}
 	}()
 
+	c.generation++
+	_ = c.state.TransitionTo(tunnel.StateConnecting)
+	_ = c.state.TransitionTo(tunnel.StateTLSHandshake)
+	_ = c.state.TransitionTo(tunnel.StateAuthenticating)
+	_ = c.state.TransitionTo(tunnel.StateRegistering)
+
 	register := tunnel.Message{
-		Type:     "register",
-		Key:      c.key,
-		ClientID: c.clientID,
-		Target:   c.localAddr,
-		Protocol: c.protocol,
+		Type:       "register",
+		Key:        c.key,
+		ClientID:   c.clientID,
+		Target:     c.localAddr,
+		Protocol:   c.protocol,
+		Generation: c.generation,
+		Subdomain:  c.subdomain,
 	}
 
 	// If reconnecting and we had a port before, request the same port
@@ -411,8 +432,11 @@ func (c *client) connectControl() error {
 		return err
 	}
 	if resp.Type != "registered" {
+		_ = c.state.TransitionTo(tunnel.StateClosed)
 		return fmt.Errorf("đăng ký thất bại: %+v", resp)
 	}
+	_ = c.state.TransitionTo(tunnel.StateActive)
+	go c.replayQueuedMessages()
 	if strings.TrimSpace(resp.Key) != "" {
 		c.key = strings.TrimSpace(resp.Key)
 	}
@@ -447,8 +471,12 @@ func (c *client) connectControl() error {
 
 	// Log success based on protocol
 	if c.protocol == "http" {
+		domain := c.baseDomain
+		if domain == "" {
+			domain = "bacsycay.click"
+		}
 		log.Printf("[client] ✅ HTTP Tunnel Active")
-		log.Printf("[client] 🌐 Public URL: https://%s.vutrungocrong.fun", c.subdomain)
+		log.Printf("[client] 🌐 Public URL: https://%s.%s", c.subdomain, domain)
 		log.Printf("[client] 📍 Forwarding to: %s", c.localAddr)
 	} else {
 		log.Printf("[client] đăng ký thành công, public port %d", c.remotePort)
@@ -509,10 +537,35 @@ func (c *client) heartbeatLoop() {
 		select {
 		case <-ticker.C:
 			start := time.Now()
+			if c.enc == nil {
+				return
+			}
 			if err := c.enc.Encode(tunnel.Message{Type: "ping"}); err != nil {
 				return
 			}
 			atomic.StoreInt64(&c.pingSent, start.UnixNano())
+
+			c.rttMu.Lock()
+			currentRTT := c.rtt
+			c.rttMu.Unlock()
+
+			pongTimeout := 3 * currentRTT
+			if pongTimeout < 3*time.Second {
+				pongTimeout = 3 * time.Second
+			}
+			if pongTimeout > 10*time.Second {
+				pongTimeout = 10 * time.Second
+			}
+
+			// Spawn check routine
+			go func(sentTime int64, timeout time.Duration) {
+				time.Sleep(timeout)
+				sent := atomic.LoadInt64(&c.pingSent)
+				if sent == sentTime && sent > 0 {
+					log.Printf("[client] Ping timeout sau %v (RTT=%v), đóng control...", timeout, currentRTT)
+					c.closeControl()
+				}
+			}(start.UnixNano(), pongTimeout)
 		case <-c.done:
 			return
 		}
@@ -673,6 +726,9 @@ func (c *client) handleProxy(id string) {
 }
 
 func (c *client) handleUDPOpen(msg tunnel.Message) {
+	if debugUDP {
+		log.Printf("[client] handleUDPOpen called id=%s proto=%q", msg.ID, msg.Protocol)
+	}
 	if c.protocol != "udp" {
 		return
 	}
@@ -829,6 +885,9 @@ func (c *client) handleUDPControlPacket(packet []byte) {
 }
 
 func (c *client) handleUDPDataPacket(id string, payload []byte) {
+	if debugUDP {
+		log.Printf("[client] handleUDPDataPacket id=%s len=%d", id, len(payload))
+	}
 	if len(payload) == 0 {
 		return
 	}
@@ -916,7 +975,7 @@ func (c *client) handleBackendTimeout(id string) {
 	}
 	log.Printf("[client] backend không phản hồi cho phiên %s (remote %s) - đóng phiên", id, remote)
 	if c.enc != nil {
-		_ = c.enc.Encode(tunnel.Message{Type: "udp_idle", ID: id, Protocol: "udp"})
+		_ = c.sendControlMessage(tunnel.Message{Type: "udp_idle", ID: id, Protocol: "udp"})
 	}
 	c.removeUDPSession(id, true)
 }
@@ -1029,7 +1088,7 @@ func (c *client) sendUDPClose(id string) {
 		log.Printf("[client] gửi udp_close lỗi: %v", err)
 	}
 	if c.enc != nil {
-		_ = c.enc.Encode(tunnel.Message{Type: "udp_close", ID: id, Protocol: "udp"})
+		_ = c.sendControlMessage(tunnel.Message{Type: "udp_close", ID: id, Protocol: "udp"})
 	}
 }
 
@@ -1294,7 +1353,7 @@ func (c *client) reportProxyError(id string, err error) {
 	if c.enc == nil {
 		return
 	}
-	_ = c.enc.Encode(tunnel.Message{
+	_ = c.sendControlMessage(tunnel.Message{
 		Type:  "proxy_error",
 		ID:    id,
 		Error: err.Error(),
@@ -1429,6 +1488,9 @@ func (c *client) recordPingReply() {
 		return
 	}
 	ms := time.Since(time.Unix(0, sent))
+	c.rttMu.Lock()
+	c.rtt = ms
+	c.rttMu.Unlock()
 	atomic.StoreInt64(&c.pingMs, ms.Milliseconds())
 	if c.pingCh == nil {
 		return
@@ -1540,7 +1602,7 @@ func (c *client) renderFrame(stats trafficStats, ping time.Duration) {
 			if c.protocol == "http" && c.subdomain != "" {
 				domain := c.baseDomain
 				if domain == "" {
-					domain = "vutrungocrong.fun" // Fallback default
+					domain = "bacsycay.click" // Fallback default
 				}
 				displayHost = fmt.Sprintf("https://%s.%s", c.subdomain, domain)
 			}
@@ -1602,4 +1664,35 @@ func terminalSize() (int, int) {
 
 func isEOF(err error) bool {
 	return errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) || strings.Contains(err.Error(), "use of closed network connection")
+}
+
+func (c *client) sendControlMessage(msg tunnel.Message) error {
+	if c.state.Get() != tunnel.StateActive {
+		c.ctrlQueue.Push(msg)
+		log.Printf("[client] Control plane offline. Message queued: %s", msg.Type)
+		return nil
+	}
+	if c.enc == nil {
+		c.ctrlQueue.Push(msg)
+		return fmt.Errorf("control plane encoder not initialized")
+	}
+	if err := c.enc.Encode(msg); err != nil {
+		c.ctrlQueue.Push(msg)
+		return err
+	}
+	return nil
+}
+
+func (c *client) replayQueuedMessages() {
+	messages := c.ctrlQueue.PopAll()
+	if len(messages) == 0 {
+		return
+	}
+	log.Printf("[client] Replaying %d queued control messages...", len(messages))
+	for _, msg := range messages {
+		if err := c.sendControlMessage(msg); err != nil {
+			log.Printf("[client] Failed to replay message %s: %v", msg.Type, err)
+			break
+		}
+	}
 }

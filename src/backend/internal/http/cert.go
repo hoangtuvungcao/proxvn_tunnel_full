@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // CertManager handles SSL certificate loading and validation
@@ -26,23 +27,31 @@ func (cm *CertManager) LoadCertificate() error {
 		cert string
 		key  string
 	}{
-		// Current directory
+		// Current directory (preferred for Docker / portable deploys)
 		{"wildcard.crt", "wildcard.key"},
 		{"server.crt", "server.key"},
 		{"cert.pem", "key.pem"},
-		
-		// Let's Encrypt locations (Linux)
-		{"/etc/letsencrypt/live/vutrungocrong.fun/fullchain.pem", "/etc/letsencrypt/live/vutrungocrong.fun/privkey.pem"},
-		{"/etc/letsencrypt/live/*.vutrungocrong.fun/fullchain.pem", "/etc/letsencrypt/live/*.vutrungocrong.fun/privkey.pem"},
-		
-		// Common SSL directory
-		{"/etc/ssl/certs/vutrungocrong.fun.crt", "/etc/ssl/private/vutrungocrong.fun.key"},
 	}
-	
+
+	// Let's Encrypt / system SSL locations are derived from the configured
+	// HTTP_DOMAIN so the same binary works for any domain.
+	if domain := strings.TrimPrefix(os.Getenv("HTTP_DOMAIN"), "."); domain != "" {
+		locations = append(locations,
+			struct{ cert, key string }{
+				fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", domain),
+				fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", domain),
+			},
+			struct{ cert, key string }{
+				fmt.Sprintf("/etc/ssl/certs/%s.crt", domain),
+				fmt.Sprintf("/etc/ssl/private/%s.key", domain),
+			},
+		)
+	}
+
 	for _, loc := range locations {
 		certPath := loc.cert
 		keyPath := loc.key
-		
+
 		// Check if files exist
 		if _, err := os.Stat(certPath); err == nil {
 			if _, err := os.Stat(keyPath); err == nil {
@@ -56,7 +65,7 @@ func (cm *CertManager) LoadCertificate() error {
 			}
 		}
 	}
-	
+
 	return fmt.Errorf("no valid SSL certificate found")
 }
 
@@ -67,7 +76,7 @@ func (cm *CertManager) validateCertificate(certFile, keyFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load certificate: %w", err)
 	}
-	
+
 	_ = cert // Certificate is valid
 	return nil
 }
@@ -85,7 +94,7 @@ func (cm *CertManager) GetCertFiles() (string, string, error) {
 func (cm *CertManager) GenerateSelfSignedCertIfNeeded() error {
 	certFile := "wildcard.crt"
 	keyFile := "wildcard.key"
-	
+
 	// Check if files already exist
 	if _, err := os.Stat(certFile); err == nil {
 		if _, err := os.Stat(keyFile); err == nil {
@@ -95,11 +104,15 @@ func (cm *CertManager) GenerateSelfSignedCertIfNeeded() error {
 			return nil
 		}
 	}
-	
+
+	domain := strings.TrimPrefix(os.Getenv("HTTP_DOMAIN"), ".")
+	if domain == "" {
+		domain = "your-domain"
+	}
 	log.Printf("[cert] WARNING: No SSL certificate found. HTTP tunneling will not work!")
-	log.Printf("[cert] Please provide a wildcard certificate for *.vutrungocrong.fun")
+	log.Printf("[cert] Please provide a wildcard certificate for *.%s", domain)
 	log.Printf("[cert] Expected files: wildcard.crt and wildcard.key in current directory")
-	
+
 	return fmt.Errorf("SSL certificate required for HTTP tunneling")
 }
 
@@ -108,8 +121,8 @@ func (cm *CertManager) GetCertificateInfo() string {
 	if cm.certFile == "" {
 		return "No certificate loaded"
 	}
-	return fmt.Sprintf("Certificate: %s, Key: %s", 
-		filepath.Base(cm.certFile), 
+	return fmt.Sprintf("Certificate: %s, Key: %s",
+		filepath.Base(cm.certFile),
 		filepath.Base(cm.keyFile))
 }
 
@@ -118,18 +131,18 @@ func (cm *CertManager) CheckCertificateExpiry() error {
 	if cm.certFile == "" {
 		return fmt.Errorf("no certificate loaded")
 	}
-	
+
 	cert, err := tls.LoadX509KeyPair(cm.certFile, cm.keyFile)
 	if err != nil {
 		return err
 	}
-	
+
 	if len(cert.Certificate) == 0 {
 		return fmt.Errorf("invalid certificate")
 	}
-	
+
 	// Note: Full expiry checking would require parsing the certificate
 	// For now, we just validate that it loads correctly
-	
+
 	return nil
 }

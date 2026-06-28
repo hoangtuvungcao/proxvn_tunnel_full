@@ -51,6 +51,9 @@ func NewDatabase(dsn string) (*Database, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	// Start checkpoint ticker every 5 minutes
+	database.startCheckpointTicker(5 * time.Minute)
+
 	// Start cleanup routine
 	go database.cleanupOldConnections()
 
@@ -58,87 +61,132 @@ func NewDatabase(dsn string) (*Database, error) {
 	return database, nil
 }
 
-func (d *Database) migrate() error {
-	queries := []string{
-		// Enable foreign keys
-		`PRAGMA foreign_keys = ON;`,
-		`
-		CREATE TABLE IF NOT EXISTS users (
-			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-			username TEXT UNIQUE NOT NULL,
-			email TEXT UNIQUE NOT NULL,
-			password TEXT NOT NULL,
-			role TEXT DEFAULT 'user',
-			api_key TEXT UNIQUE,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);  
-		`,
-		`
-		CREATE TABLE IF NOT EXISTS tunnels (
-			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			name TEXT NOT NULL,
-			protocol TEXT NOT NULL CHECK (protocol IN ('tcp', 'udp', 'http')),
-			local_host TEXT NOT NULL,
-			local_port INTEGER NOT NULL CHECK (local_port > 0 AND local_port < 65536),
-			public_port INTEGER UNIQUE,
-			status TEXT DEFAULT 'inactive',
-			client_id TEXT,
-			auth_token TEXT,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-		`,
-		`
-		CREATE TABLE IF NOT EXISTS connections (
-			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-			tunnel_id TEXT NOT NULL REFERENCES tunnels(id) ON DELETE CASCADE,
-			remote_addr TEXT NOT NULL,
-			connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			disconnected_at DATETIME,
-			bytes_up INTEGER DEFAULT 0,
-			bytes_down INTEGER DEFAULT 0,
-			duration INTEGER DEFAULT 0
-		);
-		`,
-		`
-		CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-		CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-		CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key);
-		CREATE INDEX IF NOT EXISTS idx_tunnels_user_id ON tunnels(user_id);
-		CREATE INDEX IF NOT EXISTS idx_tunnels_public_port ON tunnels(public_port);
-		CREATE INDEX IF NOT EXISTS idx_tunnels_status ON tunnels(status);
-		CREATE INDEX IF NOT EXISTS idx_connections_tunnel_id ON connections(tunnel_id);
-		CREATE INDEX IF NOT EXISTS idx_connections_connected_at ON connections(connected_at);
-		`,
-		// SQLite triggers for updated_at (simpler than PostgreSQL functions)
-		`
-		CREATE TRIGGER IF NOT EXISTS update_users_updated_at 
-		AFTER UPDATE ON users
-		FOR EACH ROW
-		BEGIN
-			UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-		END;
-		`,
-		`
-		CREATE TRIGGER IF NOT EXISTS update_tunnels_updated_at
-		AFTER UPDATE ON tunnels
-		FOR EACH ROW
-		BEGIN
-			UPDATE tunnels SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-		END;
-		`,
-	}
-
-	for _, query := range queries {
-		if _, err := d.db.Exec(query); err != nil {
-			return fmt.Errorf("failed to execute migration query: %w", err)
+func (d *Database) startCheckpointTicker(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	go func() {
+		for range ticker.C {
+			if _, err := d.db.Exec("PRAGMA wal_checkpoint(PASSIVE);"); err != nil {
+				log.Printf("[database] SQLite WAL checkpoint error: %v", err)
+			}
 		}
+	}()
+}
+
+func (d *Database) migrate() error {
+	// Enable foreign keys
+	if _, err := d.db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		return fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
-	log.Println("[database] SQLite3 migration completed successfully")
+	// Create schema_versions table if not exists
+	_, err := d.db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_versions (
+			version INTEGER PRIMARY KEY,
+			applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create schema_versions: %w", err)
+	}
+
+	// Get current version
+	var currentVersion int
+	err = d.db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_versions").Scan(&currentVersion)
+	if err != nil {
+		currentVersion = 0
+	}
+
+	migrations := map[int][]string{
+		1: {
+			`CREATE TABLE IF NOT EXISTS users (
+				id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+				username TEXT UNIQUE NOT NULL,
+				email TEXT UNIQUE NOT NULL,
+				password TEXT NOT NULL,
+				role TEXT DEFAULT 'user',
+				api_key TEXT UNIQUE,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+			`CREATE TABLE IF NOT EXISTS tunnels (
+				id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				name TEXT NOT NULL,
+				protocol TEXT NOT NULL CHECK (protocol IN ('tcp', 'udp', 'http')),
+				local_host TEXT NOT NULL,
+				local_port INTEGER NOT NULL CHECK (local_port > 0 AND local_port < 65536),
+				public_port INTEGER UNIQUE,
+				status TEXT DEFAULT 'inactive',
+				client_id TEXT,
+				auth_token TEXT,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+			`CREATE TABLE IF NOT EXISTS connections (
+				id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+				tunnel_id TEXT NOT NULL REFERENCES tunnels(id) ON DELETE CASCADE,
+				remote_addr TEXT NOT NULL,
+				connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				disconnected_at DATETIME,
+				bytes_up INTEGER DEFAULT 0,
+				bytes_down INTEGER DEFAULT 0,
+				duration INTEGER DEFAULT 0
+			);`,
+			`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);`,
+			`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`,
+			`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key);`,
+			`CREATE INDEX IF NOT EXISTS idx_tunnels_user_id ON tunnels(user_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_tunnels_public_port ON tunnels(public_port);`,
+			`CREATE INDEX IF NOT EXISTS idx_tunnels_status ON tunnels(status);`,
+			`CREATE INDEX IF NOT EXISTS idx_connections_tunnel_id ON connections(tunnel_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_connections_connected_at ON connections(connected_at);`,
+			`CREATE TRIGGER IF NOT EXISTS update_users_updated_at 
+			AFTER UPDATE ON users
+			FOR EACH ROW
+			BEGIN
+				UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+			END;`,
+			`CREATE TRIGGER IF NOT EXISTS update_tunnels_updated_at
+			AFTER UPDATE ON tunnels
+			FOR EACH ROW
+			BEGIN
+				UPDATE tunnels SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+			END;`,
+		},
+		2: {
+			`CREATE TABLE IF NOT EXISTS reservations (
+				client_key TEXT PRIMARY KEY,
+				port INTEGER,
+				subdomain TEXT,
+				expires_at DATETIME NOT NULL
+			);`,
+			`CREATE INDEX IF NOT EXISTS idx_reservations_expires_at ON reservations(expires_at);`,
+		},
+	}
+
+	for version := currentVersion + 1; version <= len(migrations); version++ {
+		tx, err := d.db.Begin()
+		if err != nil {
+			return fmt.Errorf("failed to start transaction for migration version %d: %w", version, err)
+		}
+		for _, query := range migrations[version] {
+			if _, err := tx.Exec(query); err != nil {
+				_ = tx.Rollback()
+				return fmt.Errorf("migration version %d failed query: %s, error: %w", version, query, err)
+			}
+		}
+		if _, err := tx.Exec("INSERT INTO schema_versions (version) VALUES ($1)", version); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("failed to record migration version %d: %w", version, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("failed to commit migration version %d: %w", version, err)
+		}
+		log.Printf("[database] SQLite3 migration version %d applied successfully", version)
+	}
+
+	log.Println("[database] SQLite3 migrations checked and completed successfully")
 	return nil
 }
 
@@ -501,4 +549,8 @@ func (d *Database) GetTunnelStats(tunnelID string) (*models.TunnelStats, error) 
 	}
 
 	return stats, nil
+}
+
+func (d *Database) GetDB() *sql.DB {
+	return d.db
 }

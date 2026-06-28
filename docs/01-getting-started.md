@@ -35,13 +35,16 @@ docker compose up -d
 Tải binary từ [Releases](https://github.com/hoangtuvungcao/proxvn_tunnel/releases) hoặc build:
 
 ```bash
-# Build Server & Client
-./scripts/build.sh
+# Build tất cả nền tảng (client + server)
+./build-all.sh
 ```
 
 Binary sẽ nằm trong thư mục `bin/`:
-- `proxvn-linux-client`, `proxvn.exe` (Client)
-- `proxvn-linux-server`, `svproxvn.exe` (Server)
+- Client: `bin/client/proxvn-linux-amd64`, `proxvn-windows-amd64.exe`, `proxvn-darwin-arm64`, `proxvn-android-arm64`, ...
+- Server: `bin/server/proxvn-server-linux-amd64`, `proxvn-server-windows-amd64.exe`, ...
+- Checksums: `bin/SHA256SUMS-client.txt`, `bin/SHA256SUMS-server.txt`
+
+> Các ví dụ dưới đây dùng client Linux `bin/client/proxvn-linux-amd64`. Thay bằng binary phù hợp với hệ điều hành của bạn.
 
 ## 🔥 Chạy thử Tunnel
 
@@ -50,8 +53,8 @@ Public website đang chạy localhost:3000 ra Internet với HTTPS.
 
 ```bash
 # Client
-./bin/proxvn-linux-client --proto http 3000
-# Output: https://random-id.vutrungocrong.fun
+./bin/client/proxvn-linux-amd64 --proto http 3000
+# Output: https://random-id.bacsycay.click
 ```
 
 ### 2. TCP Tunnel (SSH, RDP, Database)
@@ -59,8 +62,8 @@ Public SSH port 22 hoặc Remote Desktop 3389.
 
 ```bash
 # Client
-./bin/proxvn-linux-client 22
-# Output: server-ip:10001
+./bin/client/proxvn-linux-amd64 22
+# Output: 103.77.246.196:10000
 ```
 
 ### 3. UDP Tunnel (Game Server)
@@ -68,7 +71,8 @@ Public Minecraft server port 19132.
 
 ```bash
 # Client
-./bin/proxvn-linux-client --proto udp 19132
+./bin/client/proxvn-linux-amd64 --proto udp 19132
+# Output: 103.77.246.196:10000 (UDP)
 ```
 
 ### 4. File Sharing (Mới 🌟)
@@ -76,7 +80,7 @@ Chia sẻ thư mục hiện tại thành ổ đĩa mạng (WebDAV) và quản l�
 
 ```bash
 # Client
-./bin/proxvn-linux-client --file . --pass 123456 --permissions rwx
+./bin/client/proxvn-linux-amd64 --file . --pass 123456 --permissions rwx
 ```
 - **Web UI**: Truy cập URL được cấp, đăng nhập để upload/download/sửa file.
 - **WebDAV**: Mount như ổ đĩa mạng trên Windows/macOS.

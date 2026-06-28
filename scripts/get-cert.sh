@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 cd "$(dirname "$0")/.."
 
 # Default server
-DEFAULT_SERVER="103.77.246.206:8882"
+DEFAULT_SERVER="103.77.246.196:8882"
 SERVER=${1:-$DEFAULT_SERVER}
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"

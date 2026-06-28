@@ -35,6 +35,7 @@ type ServerConfig struct {
 	IdleTimeout     time.Duration
 	HTTPDomain      string // Base domain for HTTP tunneling
 	HTTPPort        int    // Port for HTTP proxy
+	PublicHost      string // Public host/IP advertised for TCP/UDP tunnels (auto-detected if empty)
 }
 
 // DatabaseConfig cấu hình database
@@ -166,6 +167,7 @@ func Load() (*Config, error) {
 			IdleTimeout:     getEnvDuration("IDLE_TIMEOUT", 60*time.Second),
 			HTTPDomain:      getEnv("HTTP_DOMAIN", ""),
 			HTTPPort:        getEnvInt("HTTP_PORT", 443),
+			PublicHost:      getEnv("PUBLIC_HOST", ""),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

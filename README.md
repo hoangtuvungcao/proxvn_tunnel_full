@@ -45,13 +45,13 @@ Tải binary mới nhất từ [Releases](https://github.com/hoangtuvungcao/prox
 **Public Web Server port 3000:**
 ```bash
 ./bin/client/proxvn-linux-amd64 --proto http 3000
-# Output: https://random-id.vutrungocrong.fun
+# Output: https://random-id.bacsycay.click
 ```
 
 **Public SSH port 22:**
 ```bash
 ./bin/client/proxvn-linux-amd64 --proto tcp 22
-# Output: 103.77.246.206:10001
+# Output: 103.77.246.196:10001
 ```
 
 ---
@@ -70,7 +70,7 @@ proxvn [OPTIONS] [LOCAL_PORT]
 | Flag | Mặc định | Mô tả |
 | :--- | :--- | :--- |
 | `--proto` | `tcp` | Giao thức tunnel: `tcp`, `udp`, `http`. |
-| `--server` | `103.77.246.206:8882` | Địa chỉ server tunnel (IP:Port). Mặc định trỏ về server cộng đồng. |
+| `--server` | `103.77.246.196:8882` | Địa chỉ server tunnel (IP:Port). Mặc định trỏ về server cộng đồng. |
 | `--host` | `localhost` | Địa chỉ local service (VD: 192.168.1.10). |
 | `--port` | `80` | Port local service (có thể điền trực tiếp cuối lệnh). |
 | `--id` | (random) | Custom Client ID (để nhận diện trong Dashboard). |
@@ -124,7 +124,7 @@ proxvn --proto http --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e3
 **Kết quả:**
 ```
 ✅ HTTP Tunnel Active
-🌐 Public URL: https://abc123.vutrungocrong.fun
+🌐 Public URL: https://abc123.bacsycay.click
 📍 Forwarding to: localhost:3000
 ```
 
@@ -150,7 +150,7 @@ proxvn --server YOUR_VPS_IP:8882 22
 
 **Kết quả:**
 ```
-Public Address: 103.77.246.206:10001
+Public Address: 103.77.246.196:10001
 ```
 
 #### 3. UDP Tunneling (`--proto udp`)
@@ -199,13 +199,13 @@ proxvn --file ~/Documents --pass mypassword --cert-pin e6af1198473d3b0209876511a
 
 *Windows:*
 ```cmd
-net use Z: https://abc123.vutrungocrong.fun /user:proxvn yourpassword
+net use Z: https://abc123.bacsycay.click /user:proxvn yourpassword
 ```
 
 *macOS:*
 ```
 Finder → Go → Connect to Server
-Server: https://abc123.vutrungocrong.fun
+Server: https://abc123.bacsycay.click
 Username: proxvn
 Password: yourpassword
 ```
@@ -213,7 +213,7 @@ Password: yourpassword
 *Linux:*
 ```bash
 sudo apt install davfs2
-sudo mount -t davfs https://abc123.vutrungocrong.fun /mnt/proxvn
+sudo mount -t davfs https://abc123.bacsycay.click /mnt/proxvn
 # Username: proxvn
 # Password: yourpassword
 ```
@@ -339,8 +339,8 @@ Xem file `.env.server.example` để có danh sách đầy đủ các biến mô
 
 Để chạy server riêng hỗ trợ HTTPS Subdomain, bạn cần:
 
-1.  **Một tên miền** (VD: vutrungocrong.fun) trỏ về IP VPS.
-2.  **Chứng chỉ SSL Wildcard** (`*.vutrungocrong.fun`).
+1.  **Một tên miền** (VD: bacsycay.click) trỏ về IP VPS.
+2.  **Chứng chỉ SSL Wildcard** (`*.bacsycay.click`).
 3.  Đặt file `server.crt` và `server.key` (SSL của server tunnel) và wildcard cert (cho HTTP proxy) vào thư mục chạy.
 
 #### Cách 1: Dùng Cloudflare Origin Certificate (Khuyến nghị)
@@ -594,7 +594,7 @@ docker run -d \
 
 ```bash
 # Kiểm tra kết nối tới server
-telnet 103.77.246.206 8882
+telnet 103.77.246.196 8882
 
 # Chạy với insecure mode để test
 proxvn --insecure --proto http 3000
@@ -623,7 +623,7 @@ Nếu gặp lỗi cert-pin không khớp:
 
 ```bash
 # Lấy cert fingerprint của server
-openssl s_client -connect 103.77.246.206:8882 < /dev/null 2>/dev/null | \
+openssl s_client -connect 103.77.246.196:8882 < /dev/null 2>/dev/null | \
   openssl x509 -fingerprint -sha256 -noout -in /dev/stdin
 
 # Hoặc chạy client không có cert-pin để xem fingerprint
@@ -639,7 +639,7 @@ sc config WebClient start=auto
 net start WebClient
 
 # Mount với username/password
-net use Z: https://subdomain.vutrungocrong.fun /user:proxvn yourpassword
+net use Z: https://subdomain.bacsycay.click /user:proxvn yourpassword
 ```
 
 **Linux:**
@@ -648,7 +648,7 @@ net use Z: https://subdomain.vutrungocrong.fun /user:proxvn yourpassword
 sudo apt install davfs2
 
 # Mount
-sudo mount -t davfs https://subdomain.vutrungocrong.fun /mnt/proxvn
+sudo mount -t davfs https://subdomain.bacsycay.click /mnt/proxvn
 ```
 
 ---
@@ -736,7 +736,7 @@ sudo mount -t davfs https://subdomain.vutrungocrong.fun /mnt/proxvn
 *   📧 **Email**: trong20843@gmail.com
 *   💬 **Telegram**: [t.me/ZzTLINHzZ](https://t.me/ZzTLINHzZ)
 *   🐛 **Báo lỗi**: [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
-*   🌐 **Website**: [https://vutrungocrong.fun](https://vutrungocrong.fun)
+*   🌐 **Website**: [https://bacsycay.click](https://bacsycay.click)
 *   📖 **Documentation**: [https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs](https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs)
 
 ---

@@ -71,7 +71,6 @@ func PermissionMiddleware(perms Permissions) func(http.Handler) http.Handler {
 			method := r.Method
 
 			// Log request for debugging
-			// log.Printf("[FileServer] %s %s (Permissions: %s)", method, r.URL.Path, perms)
 
 			// Kiểm tra quyền dựa trên HTTP method
 			switch method {

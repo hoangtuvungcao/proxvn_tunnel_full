@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -101,19 +104,35 @@ func AdminMiddleware() gin.HandlerFunc {
 	}
 }
 
-// CORSMiddleware với cấu hình CORS
+// CORSMiddleware với cấu hình CORS bảo mật
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
+		allowed := false
 		if origin != "" {
+			if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") || strings.HasPrefix(origin, "https://localhost") {
+				allowed = true
+			} else {
+				httpDomain := os.Getenv("HTTP_DOMAIN")
+				if httpDomain != "" {
+					cleanDomain := strings.TrimPrefix(httpDomain, ".")
+					if strings.HasSuffix(origin, cleanDomain) {
+						allowed = true
+					}
+				}
+			}
+		}
+
+		if allowed && origin != "" {
 			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
 		} else {
 			c.Header("Access-Control-Allow-Origin", "*")
+			c.Header("Access-Control-Allow-Credentials", "false")
 		}
 
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization, X-API-Key, X-Requested-With")
-		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization, X-API-Key, X-Requested-With, X-Timestamp")
 		c.Header("Access-Control-Max-Age", "86400") // 24 hours
 
 		if c.Request.Method == "OPTIONS" {
@@ -348,4 +367,95 @@ func RecoveryMiddleware() gin.HandlerFunc {
 			Error:   "Internal server error",
 		})
 	})
+}
+
+// TimestampValidationMiddleware ngăn chặn replay attacks bằng cách kiểm tra clock skew
+func TimestampValidationMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			tsHeader := c.GetHeader("X-Timestamp")
+			if tsHeader != "" {
+				ts, err := time.Parse(time.RFC3339, tsHeader)
+				if err == nil {
+					diff := time.Since(ts)
+					if diff < 0 {
+						diff = -diff
+					}
+					if diff > 5*time.Minute {
+						c.JSON(http.StatusBadRequest, models.APIResponse{
+							Success: false,
+							Error:   "Request timestamp skew too large (> 5 minutes)",
+						})
+						c.Abort()
+						return
+					}
+				} else {
+					c.JSON(http.StatusBadRequest, models.APIResponse{
+						Success: false,
+						Error:   "Invalid X-Timestamp header format (RFC3339 required)",
+					})
+					c.Abort()
+					return
+				}
+			}
+		}
+		c.Next()
+	}
+}
+
+type gzipWriter struct {
+	gin.ResponseWriter
+	writer io.Writer
+}
+
+func (g *gzipWriter) Write(data []byte) (int, error) {
+	return g.writer.Write(data)
+}
+
+func (g *gzipWriter) WriteString(s string) (int, error) {
+	return g.writer.Write([]byte(s))
+}
+
+// GzipAndCacheMiddleware nén gzip và thiết lập Cache-Control cho tài nguyên tĩnh
+func GzipAndCacheMiddleware() gin.HandlerFunc {
+	var gzipPool = sync.Pool{
+		New: func() interface{} {
+			w, _ := gzip.NewWriterLevel(io.Discard, gzip.BestSpeed)
+			return w
+		},
+	}
+
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		isAsset := strings.HasSuffix(path, ".css") ||
+			strings.HasSuffix(path, ".js") ||
+			strings.HasSuffix(path, ".png") ||
+			strings.HasSuffix(path, ".jpg") ||
+			strings.HasSuffix(path, ".svg") ||
+			strings.HasSuffix(path, ".woff") ||
+			strings.HasSuffix(path, ".woff2")
+
+		if isAsset {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
+
+		if !strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") ||
+			c.GetHeader("Content-Encoding") != "" {
+			c.Next()
+			return
+		}
+
+		c.Header("Content-Encoding", "gzip")
+		c.Header("Vary", "Accept-Encoding")
+
+		gz := gzipPool.Get().(*gzip.Writer)
+		gz.Reset(c.Writer)
+		defer func() {
+			gz.Close()
+			gzipPool.Put(gz)
+		}()
+
+		c.Writer = &gzipWriter{ResponseWriter: c.Writer, writer: gz}
+		c.Next()
+	}
 }

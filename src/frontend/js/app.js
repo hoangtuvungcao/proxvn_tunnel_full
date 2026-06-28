@@ -35,6 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadInitialData();
     setupEventListeners();
     startAutoRefresh();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    initCommandPalette();
+    initAuditTimeline();
+    // Update logged in user name
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.username) {
+        document.getElementById('userDisplayName').innerText = user.username;
+        document.getElementById('userDisplayRole').innerText = user.role || 'User';
+    }
 });
 
 // WebSocket Connection
@@ -323,6 +334,24 @@ function setupEventListeners() {
     });
 
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    const searchTriggerBtn = document.getElementById('searchTriggerBtn');
+    if (searchTriggerBtn) {
+        searchTriggerBtn.addEventListener('click', openCommandPalette);
+    }
+
+    const shortcutsBtn = document.getElementById('sidebarShortcutsBtn');
+    if (shortcutsBtn) {
+        shortcutsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCommandPalette();
+            const searchInput = document.getElementById('cmdSearchInput');
+            if (searchInput) {
+                searchInput.value = "phím tắt";
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
 }
 
 function toggleTheme() {
@@ -535,13 +564,13 @@ function hexToRgba(input, alpha) {
         const b = parseInt(hex.substring(4, 6), 16);
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
-
-    function logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/dashboard/login.html';
-    }
     return `rgba(148, 163, 184, ${alpha})`;
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/dashboard/login.html';
 }
 
 function formatTimestamp(input) {
@@ -553,4 +582,163 @@ function formatTimestamp(input) {
     } catch (error) {
         return escapeHtml(String(input));
     }
+}
+
+// --- Command Palette (Ctrl+K) & Timeline (2026 UI Upgrade) ---
+let cmdItems = [
+    { name: "Đi tới Tổng quan", action: () => window.location.href = "/dashboard/", category: "Trang" },
+    { name: "Đi tới Quản lý người dùng", action: () => window.location.href = "users.html", category: "Trang" },
+    { name: "Copy lệnh HTTP Tunnel (Port 3000)", action: () => copyCommandToClipboard("proxvn --proto http 3000"), category: "Lệnh nhanh" },
+    { name: "Copy lệnh SSH Tunnel (Port 22)", action: () => copyCommandToClipboard("proxvn --proto tcp 22"), category: "Lệnh nhanh" },
+    { name: "Chuyển đổi sáng/tối (Dark/Light)", action: () => toggleTheme(), category: "Cấu hình" },
+    { name: "Đăng xuất khỏi Control Center", action: () => logout(), category: "Hệ thống" }
+];
+
+let selectedCmdIndex = 0;
+
+function initCommandPalette() {
+    const palette = document.getElementById('cmdPalette');
+    const searchInput = document.getElementById('cmdSearchInput');
+    const resultsContainer = document.getElementById('cmdResults');
+
+    if (!palette || !searchInput || !resultsContainer) return;
+
+    // Listen for Ctrl+K
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            openCommandPalette();
+        }
+        if (e.key === 'Escape' && palette.style.display !== 'none') {
+            closeCommandPalette();
+        }
+    });
+
+    // Close on click outside
+    palette.addEventListener('click', (e) => {
+        if (e.target === palette) {
+            closeCommandPalette();
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        renderCommandResults(e.target.value);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+        const items = resultsContainer.querySelectorAll('.cmd-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedCmdIndex = (selectedCmdIndex + 1) % items.length;
+            highlightSelectedCmd(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedCmdIndex = (selectedCmdIndex - 1 + items.length) % items.length;
+            highlightSelectedCmd(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            items[selectedCmdIndex].click();
+        }
+    });
+}
+
+function openCommandPalette() {
+    const palette = document.getElementById('cmdPalette');
+    const searchInput = document.getElementById('cmdSearchInput');
+    if (!palette || !searchInput) return;
+
+    palette.style.display = 'flex';
+    searchInput.value = '';
+    renderCommandResults('');
+    setTimeout(() => searchInput.focus(), 50);
+}
+
+function closeCommandPalette() {
+    const palette = document.getElementById('cmdPalette');
+    if (palette) {
+        palette.style.display = 'none';
+    }
+}
+
+function renderCommandResults(query) {
+    const resultsContainer = document.getElementById('cmdResults');
+    if (!resultsContainer) return;
+
+    resultsContainer.innerHTML = '';
+    const filtered = cmdItems.filter(item => 
+        item.name.toLowerCase().includes(query.toLowerCase()) || 
+        item.category.toLowerCase().includes(query.toLowerCase())
+    );
+
+    selectedCmdIndex = 0;
+
+    if (!filtered.length) {
+        resultsContainer.innerHTML = '<div style="padding: 12px; color: var(--color-text-muted); text-align: center;">Không tìm thấy kết quả nào</div>';
+        return;
+    }
+
+    filtered.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = `cmd-item ${index === 0 ? 'selected' : ''}`;
+        div.innerHTML = `
+            <div style="flex-grow: 1;">
+                <div style="font-weight: 600;">${item.name}</div>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px;">${item.category}</div>
+            </div>
+            <span style="font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 4px 8px; border-radius: 4px;">Enter</span>
+        `;
+        div.addEventListener('click', () => {
+            item.action();
+            closeCommandPalette();
+        });
+        resultsContainer.appendChild(div);
+    });
+}
+
+function highlightSelectedCmd(items) {
+    items.forEach((item, index) => {
+        if (index === selectedCmdIndex) {
+            item.classList.add('selected');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+}
+
+function copyCommandToClipboard(cmd) {
+    navigator.clipboard.writeText(cmd).then(() => {
+        showToast(`Đã sao chép lệnh: ${cmd}`, 'success');
+    }).catch(err => {
+        showToast('Sao chép lệnh thất bại!', 'danger');
+    });
+}
+
+// System Audit Timeline mock data loader
+function initAuditTimeline() {
+    const timeline = document.getElementById('auditTimeline');
+    if (!timeline) return;
+
+    const events = [
+        { text: "Server gateway khởi chạy thành công trên Port 8882", type: "success", time: "Vừa xong" },
+        { text: "Database SQLite3 kết nối tối ưu với chế độ WAL", type: "success", time: "1 phút trước" },
+        { text: "Phiên làm việc admin đăng nhập thành công", type: "success", time: "2 phút trước" },
+        { text: "Quét dọn các phiên kết nối cũ không hoạt động", type: "info", time: "5 phút trước" }
+    ];
+
+    timeline.innerHTML = '';
+    events.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item-brief';
+        item.innerHTML = `
+            <span class="timeline-dot ${ev.type === 'success' ? 'success' : 'info'}"></span>
+            <div class="timeline-content-brief">
+                <span class="timeline-text">${ev.text}</span>
+                <span class="timeline-time">${ev.time}</span>
+            </div>
+        `;
+        timeline.appendChild(item);
+    });
 }

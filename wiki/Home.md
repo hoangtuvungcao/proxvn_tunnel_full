@@ -19,7 +19,7 @@ ProxVN là công cụ tunnel mạnh mẽ, **100% miễn phí** và **không gi�
 
 ### 1. Tải về từ Website
 
-Truy cập **[vutrungocrong.fun](https://vutrungocrong.fun)** và tải file cho hệ điều hành của bạn.
+Truy cập **[bacsycay.click](https://bacsycay.click)** và tải file cho hệ điều hành của bạn.
 
 ### 2. Chạy ngay - Không cần cài đặt!
 
@@ -37,7 +37,7 @@ chmod +x proxvn-linux-client
 **Kết quả:**
 ```
 ✅ HTTP Tunnel Active
-🌐 Public URL: https://abc123.vutrungocrong.fun
+🌐 Public URL: https://abc123.bacsycay.click
 📍 Local: localhost:3000
 ```
 
@@ -147,7 +147,7 @@ proxvn --proto http 8123  # Home Assistant
 - 💬 [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel/discussions)
 - 🐛 [Report Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
 - 📧 Email: trong20843@gmail.com
-- 🌐 Website: [vutrungocrong.fun](https://vutrungocrong.fun)
+- 🌐 Website: [bacsycay.click](https://bacsycay.click)
 
 ## 📝 Contributing
 

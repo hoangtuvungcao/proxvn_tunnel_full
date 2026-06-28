@@ -16,6 +16,7 @@ type Message struct {
 	ClientID      string `json:"client_id,omitempty"`
 	RemotePort    int    `json:"remote_port,omitempty"`
 	RequestedPort int    `json:"requested_port,omitempty"` // Port client wants to reuse on reconnect
+	Generation    int64  `json:"generation,omitempty"`     // Generation number to prevent ghost sessions
 	Target        string `json:"target,omitempty"`
 	ID            string `json:"id,omitempty"`
 	Error         string `json:"error,omitempty"`
@@ -34,7 +35,7 @@ type Message struct {
 
 	// Security
 	UDPSecret  string `json:"udp_secret,omitempty"`  // Base64 encoded AES key
-	BaseDomain string `json:"base_domain,omitempty"` // Base domain for HTTP (e.g. vutrungocrong.fun)
+	BaseDomain string `json:"base_domain,omitempty"` // Base domain for HTTP (e.g. bacsycay.click)
 }
 
 // NewEncoder returns a JSON encoder with HTML escaping disabled.

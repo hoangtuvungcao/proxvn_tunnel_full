@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -7,179 +7,270 @@
     <title>Đăng nhập • ProxVN Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --primary: #3b82f6;
-            --text: #f1f5f9;
+            --bg-primary: #080d1a;
+            --bg-card: rgba(15, 23, 42, 0.7);
+            --border-color: rgba(148, 163, 184, 0.12);
+            --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border: #334155;
+            --accent: #5f75fc;
+            --accent-glow: rgba(95, 117, 252, 0.2);
             --error: #ef4444;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-pill: 9999px;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Manrope', sans-serif;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated aurora meshes */
+        .background {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .aurora {
+            position: absolute;
+            width: 130%;
+            height: 130%;
+            top: -15%;
+            left: -15%;
+            background: radial-gradient(circle at 10% 20%, rgba(95, 117, 252, 0.25) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.2) 0%, transparent 40%);
+            filter: blur(120px);
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes drift {
+            0% { transform: rotate(0deg) translate(0, 0); }
+            100% { transform: rotate(8deg) translate(4%, -4%); }
         }
 
         .login-card {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid var(--border);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            border-radius: var(--radius-lg);
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+            text-align: left;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 32px;
         }
 
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            display: block;
+        .brand-icon-wrap {
+            width: 54px;
+            height: 54px;
+            border-radius: var(--radius-md);
+            background-color: rgba(95, 117, 252, 0.1);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: var(--accent);
+        }
+
+        .brand-icon-wrap i {
+            width: 28px;
+            height: 28px;
+            stroke-width: 2.5px;
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-family: var(--font-display);
+            font-size: 1.65rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 8px;
         }
 
         p {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.92rem;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--text-secondary);
+            width: 18px;
+            height: 18px;
         }
 
         input {
             width: 100%;
-            padding: 0.75rem 1rem;
-            background-color: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            color: var(--text);
-            font-size: 1rem;
-            transition: border-color 0.2s;
+            padding: 12px 14px 12px 42px;
+            background-color: rgba(5, 10, 20, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         input:focus {
-            outline: none;
-            border-color: var(--primary);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
         button {
             width: 100%;
-            padding: 0.75rem;
-            background-color: var(--primary);
+            padding: 14px;
+            background-color: var(--accent);
             color: white;
             border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.98rem;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
+            box-shadow: 0 8px 24px var(--accent-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         button:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 32px var(--accent-glow);
         }
 
         button:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
         .error-message {
             color: var(--error);
-            font-size: 0.875rem;
-            margin-top: 1rem;
+            font-size: 0.88rem;
+            margin-top: 14px;
             text-align: center;
             display: none;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 10px;
+            border-radius: var(--radius-md);
         }
 
         .spinner {
-            display: inline-block;
-            width: 1.25rem;
-            height: 1.25rem;
+            width: 16px;
+            height: 16px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 1s linear infinite;
-            margin-right: 0.5rem;
-            vertical-align: middle;
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 
 <body>
+    <div class="background">
+        <div class="aurora"></div>
+    </div>
+
     <div class="login-card">
         <div class="header">
-            <span class="logo">🚀</span>
+            <div class="brand-icon-wrap">
+                <i data-lucide="radio"></i>
+            </div>
             <h1>ProxVN Admin</h1>
-            <p>Đăng nhập để vào trang quản trị</p>
+            <p>Đăng nhập để quản trị hệ thống tunnel</p>
         </div>
         <form id="loginForm">
             <div class="form-group">
                 <label for="username">Tên đăng nhập</label>
-                <input type="text" id="username" name="username" required placeholder="admin" autocomplete="username">
+                <div class="input-wrapper">
+                    <i data-lucide="user" class="input-icon"></i>
+                    <input type="text" id="username" name="username" required placeholder="admin" autocomplete="username">
+                </div>
             </div>
             <div class="form-group">
                 <label for="password">Mật khẩu</label>
-                <input type="password" id="password" name="password" required placeholder="••••••••"
-                    autocomplete="current-password">
+                <div class="input-wrapper">
+                    <i data-lucide="lock" class="input-icon"></i>
+                    <input type="password" id="password" name="password" required placeholder="••••••••"
+                        autocomplete="current-password">
+                </div>
             </div>
-            <button type="submit" id="submitBtn">Đăng nhập</button>
+            <button type="submit" id="submitBtn">Đăng nhập <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i></button>
             <div id="errorMsg" class="error-message"></div>
         </form>
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
         const form = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
         const errorMsg = document.getElementById('errorMsg');
 
-        // Check if already logged in
         if (localStorage.getItem('token')) {
-            window.location.href = '/dashboard/index.html';
+            window.location.href = '/dashboard/';
         }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Clear error
             errorMsg.style.display = 'none';
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner"></span> Đang xử lý...';
@@ -191,7 +282,8 @@
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Timestamp': new Date().toISOString()
                     },
                     body: JSON.stringify({ username, password })
                 });
@@ -199,7 +291,6 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Login success
                     localStorage.setItem('token', data.data.token);
                     localStorage.setItem('user', JSON.stringify({
                         username: data.data.username,
@@ -213,7 +304,8 @@
                 errorMsg.textContent = err.message;
                 errorMsg.style.display = 'block';
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Đăng nhập';
+                submitBtn.innerHTML = 'Đăng nhập <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>';
+                lucide.createIcons();
             }
         });
     </script>
