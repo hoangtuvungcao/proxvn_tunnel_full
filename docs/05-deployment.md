@@ -67,16 +67,53 @@ Trỏ domain về IP VPS (API hoặc Dashboard Cloudflare):
 
 | Type | Name | Content | Proxy |
 | :--- | :--- | :--- | :--- |
-| A | `@` (apex) | `<VPS_IP>` | DNS only (hoặc Proxied) |
-| A | `*` (wildcard) | `<VPS_IP>` | **DNS only** |
+| A | `@` (apex) | `<VPS_IP>` | Proxied (cam) |
+| A | `*` (wildcard) | `<VPS_IP>` | Proxied (cam) |
 
-> Wildcard `*` nên để **DNS only** (mây xám). Tunnel control (8882) và cổng public
-> (10000-20000) là non-HTTP nên không đi qua Cloudflare proxy được.
+> HTTP subdomain (`<sub>.bacsycay.click`) đi qua Cloudflare proxy nên cả apex và
+> wildcard để **Proxied** (mây cam). Tunnel control (8882) và cổng public
+> (10000-20000) là non-HTTP — client kết nối **trực tiếp tới `<VPS_IP>`**, không
+> qua Cloudflare.
 
-## 5. Chứng chỉ Wildcard TLS (Let's Encrypt DNS-01)
+### SSL/TLS mode (QUAN TRỌNG)
 
-HTTP subdomain (`https://<sub>.bacsycay.click`) cần chứng chỉ wildcard. Dùng certbot
-với plugin Cloudflare (DNS-01 hỗ trợ wildcard):
+ProxVN server lắng nghe trên **:443** (HTTPS, dùng cert wildcard) **và :80** (HTTP).
+Tùy chế độ SSL của Cloudflare (SSL/TLS → Overview):
+
+| Mode | Cloudflare → origin | Yêu cầu |
+| :--- | :--- | :--- |
+| **Full / Full (strict)** | `https://<VPS_IP>:443` | Cần cert wildcard hợp lệ ở origin (bước 5). **Khuyến nghị** — mã hóa đầu-cuối. |
+| **Flexible** | `http://<VPS_IP>:80` | Server đã tự lắng nghe :80 nên vẫn chạy, nhưng chặng CF→origin không mã hóa. |
+
+> Nếu gặp lỗi **Cloudflare 521** ("web server is down"): origin không phản hồi ở
+> cổng mà CF đang gọi. Thường do mode = Flexible nhưng origin chỉ mở 443 — ProxVN
+> đã thêm listener :80 để khắc phục. Tốt nhất chuyển sang **Full** và mở `:443`.
+
+## 5. Chứng chỉ Wildcard TLS
+
+HTTP subdomain (`https://<sub>.bacsycay.click`) cần chứng chỉ wildcard ở origin
+(khi dùng SSL mode Full). Có 2 cách:
+
+### Cách A: Cloudflare Origin Certificate (nhanh nhất, dùng cho server free hiện tại)
+
+Trong Cloudflare Dashboard → **SSL/TLS → Origin Server → Create Certificate**
+(hostnames: `*.bacsycay.click`, `bacsycay.click`; hiệu lực tới 15 năm). Lưu 2 file:
+
+```bash
+# Dán nội dung cert/key vào:
+nano ssl/wildcard.crt   # Origin Certificate
+nano ssl/wildcard.key   # Private Key
+chown 1000:1000 ssl/wildcard.crt ssl/wildcard.key
+chmod 644 ssl/wildcard.crt && chmod 640 ssl/wildcard.key
+docker compose restart proxvn-server
+```
+
+> Cert Origin chỉ được Cloudflare tin tưởng (không phải trình duyệt) → **bắt buộc bật
+> proxy (mây cam)** và SSL mode **Full**. Đây là cấu hình của server free hiện tại.
+
+### Cách B: Let's Encrypt DNS-01 (cert trình duyệt tin tưởng trực tiếp)
+
+Dùng certbot với plugin Cloudflare (DNS-01 hỗ trợ wildcard):
 
 ```bash
 # Tạo API token Cloudflare (quyền Zone:DNS:Edit cho domain) rồi:

@@ -138,6 +138,39 @@ func (p *HTTPProxyServer) Start() error {
 	return p.httpServer.ListenAndServeTLS(p.certFile, p.keyFile)
 }
 
+// StartPlainHTTP starts a plain-HTTP listener (typically :80) alongside the
+// HTTPS server. It makes the origin reachable when Cloudflare uses "Flexible"
+// SSL (the edge terminates TLS and speaks plain HTTP to the origin) and gives
+// direct HTTP visitors a redirect to HTTPS. This is blocking; run in a goroutine.
+func (p *HTTPProxyServer) StartPlainHTTP(port int) error {
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      http.HandlerFunc(p.handlePlainHTTP),
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+	}
+	log.Printf("[http] Starting plain HTTP server on port %d (Cloudflare Flexible / HTTP->HTTPS)", port)
+	return srv.ListenAndServe()
+}
+
+// handlePlainHTTP serves content when the request already arrived over HTTPS at
+// the edge (Cloudflare sets X-Forwarded-Proto/CF-Visitor), otherwise it
+// redirects a direct plaintext visitor to HTTPS. This avoids redirect loops
+// behind a TLS-terminating proxy while keeping direct access encrypted.
+func (p *HTTPProxyServer) handlePlainHTTP(w http.ResponseWriter, r *http.Request) {
+	edgeHTTPS := r.Header.Get("X-Forwarded-Proto") == "https" ||
+		strings.Contains(r.Header.Get("CF-Visitor"), "https")
+	if edgeHTTPS {
+		p.handleRequest(w, r)
+		return
+	}
+	host := r.Host
+	if host == "" {
+		host = p.baseDomain
+	}
+	http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
+}
+
 // Stop gracefully stops the server
 func (p *HTTPProxyServer) Stop() error {
 	if p.httpServer != nil {

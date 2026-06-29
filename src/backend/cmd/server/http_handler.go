@@ -113,6 +113,15 @@ func (s *server) initHTTPProxy(cfg *config.Config) {
 		}
 	}()
 
+	// Also serve plain HTTP on :80 so the origin is reachable under Cloudflare
+	// "Flexible" SSL and direct HTTP visitors get redirected to HTTPS.
+	// Non-fatal: if :80 is unavailable the HTTPS proxy still runs.
+	go func() {
+		if err := s.httpProxy.StartPlainHTTP(80); err != nil {
+			log.Printf("[http] plain HTTP :80 not started: %v", err)
+		}
+	}()
+
 	// Give it a moment to fail startup if port is busy
 	time.Sleep(100 * time.Millisecond)
 }
