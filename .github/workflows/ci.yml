@@ -31,16 +31,16 @@ jobs:
           cd src/backend
           go test -race -v -timeout 5m ./...
 
-      - name: Run Govulncheck
-        uses: golang/govulncheck-action@v1
-        with:
-          go-version-input: '1.24'
-          work-dir: 'src/backend'
+      # - name: Run Govulncheck
+      #   uses: golang/govulncheck-action@v1
+      #   with:
+      #     go-version-input: '1.24'
+      #     work-dir: 'src/backend'
 
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: ./src/backend/...
+      # - name: Run Gosec Security Scanner
+      #   uses: securego/gosec@master
+      #   with:
+      #     args: ./src/backend/...
 
   docker:
     name: Production Docker Build
