@@ -23,6 +23,10 @@ services:
       - ./data:/data
       - ./backups:/backups
       - ./logs:/logs
+      # Download binaries (bin/client/*, bin/server/*) served at /bin/*.
+      # Built via build-all.sh and rsynced to the VPS; mounted read-only so
+      # they can be updated without rebuilding the image.
+      - ./bin:/app/bin:ro
       # Wildcard TLS certificate for *.<domain> (mounted read-only).
       # Generated on the VPS via certbot DNS-01; see docs/05-deployment.md.
       - ./ssl/wildcard.crt:/app/wildcard.crt:ro

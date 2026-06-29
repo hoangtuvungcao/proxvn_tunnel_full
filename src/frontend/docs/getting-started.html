@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - ProxVN Tunnel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --accent: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        header { padding: 2rem 0; border-bottom: 1px solid var(--border); }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: var(--text); text-decoration: none; }
+        .logo i { color: var(--primary); }
+        h1 { font-size: 2.5rem; margin: 2rem 0 1rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: 1.75rem; margin: 3rem 0 1rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.25rem; margin: 2rem 0 1rem; color: var(--accent); }
+        p { margin: 1rem 0; color: var(--text-muted); }
+        .code-block { background: #1a1f2e; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; overflow-x: auto; }
+        .code-block code { font-family: 'Space Grotesk', monospace; color: var(--accent); font-size: 0.95rem; }
+        .inline-code { background: rgba(102, 126, 234, 0.1); color: var(--primary); padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-family: 'Space Grotesk', monospace; font-size: 0.9rem; }
+        .note { background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent); padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0.5rem; }
+        .note strong { color: var(--accent); }
+        ul, ol { margin: 1rem 0 1rem 2rem; color: var(--text-muted); }
+        li { margin: 0.5rem 0; }
+        .step { background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; }
+        .step-number { display: inline-block; width: 2rem; height: 2rem; background: var(--primary); color: white; border-radius: 50%; text-align: center; line-height: 2rem; font-weight: 700; margin-right: 0.75rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" class="logo">
+                <i data-lucide="radio"></i>
+                ProxVN Tunnel
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Getting Started</h1>
+        <p>Hướng dẫn cài đặt và chạy tunnel đầu tiên của bạn trong 2 phút.</p>
+
+        <div class="note">
+            <strong>Zero Configuration:</strong> Server free public đã sẵn sàng tại <code class="inline-code">103.77.246.196:8882</code>. Bạn chỉ cần download client và chạy ngay — không cần đăng ký, không cần credit card.
+        </div>
+
+        <h2>📥 Bước 1: Download Client</h2>
+        <p>Chọn binary phù hợp với hệ điều hành của bạn:</p>
+        <ul>
+            <li><strong>Windows:</strong> <a href="/bin/client/proxvn-windows-amd64.exe" style="color: var(--primary);">proxvn-windows-amd64.exe</a></li>
+            <li><strong>Linux x64:</strong> <a href="/bin/client/proxvn-linux-amd64" style="color: var(--primary);">proxvn-linux-amd64</a></li>
+            <li><strong>macOS Intel:</strong> <a href="/bin/client/proxvn-darwin-amd64" style="color: var(--primary);">proxvn-darwin-amd64</a></li>
+            <li><strong>macOS Apple Silicon:</strong> <a href="/bin/client/proxvn-darwin-arm64" style="color: var(--primary);">proxvn-darwin-arm64</a></li>
+        </ul>
+
+        <h2>⚡ Bước 2: Chạy Tunnel Đầu Tiên</h2>
+
+        <div class="step">
+            <h3><span class="step-number">1</span>HTTP Tunnel (Web Server)</h3>
+            <p>Ví dụ bạn có web server chạy ở <code class="inline-code">localhost:3000</code>:</p>
+            <div class="code-block">
+                <code># Linux/macOS<br>
+chmod +x proxvn-linux-amd64<br>
+./proxvn-linux-amd64 --proto http 3000<br>
+<br>
+# Windows<br>
+proxvn-windows-amd64.exe --proto http 3000</code>
+            </div>
+            <p>Client sẽ kết nối server và hiển thị URL public:</p>
+            <div class="code-block">
+                <code style="color: #34d399;">✓ HTTP Tunnel Active<br>
+Public URL: https://abc123.bacsycay.click<br>
+Forwarding to: localhost:3000</code>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">2</span>TCP Tunnel (SSH)</h3>
+            <p>Expose SSH server của bạn ra internet:</p>
+            <div class="code-block">
+                <code>./proxvn-linux-amd64 22</code>
+            </div>
+            <p>Kết quả:</p>
+            <div class="code-block">
+                <code style="color: #34d399;">✓ TCP Tunnel Active<br>
+Public Address: 103.77.246.196:15234<br>
+Forwarding to: localhost:22</code>
+            </div>
+            <p>Người khác có thể SSH vào máy bạn qua:</p>
+            <div class="code-block">
+                <code>ssh user@103.77.246.196 -p 15234</code>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">3</span>UDP Tunnel (Game Server)</h3>
+            <p>Ví dụ Minecraft Bedrock server:</p>
+            <div class="code-block">
+                <code>./proxvn-linux-amd64 --proto udp 19132</code>
+            </div>
+            <p>Players kết nối qua <code class="inline-code">103.77.246.196:15678</code> (port động)</p>
+        </div>
+
+        <h2>🎯 Use Cases Phổ Biến</h2>
+
+        <h3>Web Development</h3>
+        <div class="code-block">
+            <code># React dev server (port 3000)<br>
+./proxvn --proto http 3000<br>
+<br>
+# Next.js (port 3000)<br>
+./proxvn --proto http 3000<br>
+<br>
+# Laravel (port 8000)<br>
+./proxvn --proto http 8000</code>
+        </div>
+
+        <h3>Remote Access</h3>
+        <div class="code-block">
+            <code># SSH (port 22)<br>
+./proxvn 22<br>
+<br>
+# RDP Windows (port 3389)<br>
+proxvn.exe 3389<br>
+<br>
+# VNC (port 5900)<br>
+./proxvn 5900</code>
+        </div>
+
+        <h3>Database Access</h3>
+        <div class="code-block">
+            <code># PostgreSQL (port 5432)<br>
+./proxvn 5432<br>
+<br>
+# MySQL (port 3306)<br>
+./proxvn 3306<br>
+<br>
+# MongoDB (port 27017)<br>
+./proxvn 27017</code>
+        </div>
+
+        <h2>⚙️ Tùy Chỉnh Nâng Cao</h2>
+
+        <h3>Config File</h3>
+        <p>Tạo file <code class="inline-code">proxvn.json</code> cùng thư mục với binary:</p>
+        <div class="code-block">
+            <code>{<br>
+  "server": "103.77.246.196:8882",<br>
+  "proto": "http",<br>
+  "port": 3000,<br>
+  "ui": true<br>
+}</code>
+        </div>
+        <p>Sau đó chỉ cần chạy:</p>
+        <div class="code-block">
+            <code>./proxvn</code>
+        </div>
+
+        <h3>Background Mode</h3>
+        <p>Chạy client ở chế độ ngầm (không có UI):</p>
+        <div class="code-block">
+            <code># Linux/macOS<br>
+nohup ./proxvn --proto http 3000 --ui=false > tunnel.log 2>&1 &<br>
+<br>
+# Windows (PowerShell)<br>
+Start-Process proxvn.exe -ArgumentList "--proto","http","3000","--ui=false" -WindowStyle Hidden</code>
+        </div>
+
+        <h2>🔒 Certificate Pinning (Khuyến nghị)</h2>
+        <p>Để bảo vệ kết nối tunnel control, dùng cert pin:</p>
+        <div class="code-block">
+            <code>./proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 3000</code>
+        </div>
+        <p>Cert pin của server free: <code class="inline-code">29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8</code></p>
+
+        <h2>📚 Next Steps</h2>
+        <ul>
+            <li><a href="/docs/cli-guide.html" style="color: var(--primary);">CLI Reference</a> — tất cả lệnh và tham số</li>
+            <li><a href="/docs/configuration.html" style="color: var(--primary);">Configuration Guide</a> — config file chi tiết</li>
+            <li><a href="/dashboard/" style="color: var(--primary);">Dashboard</a> — monitor tunnels realtime</li>
+        </ul>
+
+        <p style="margin-top: 3rem; text-align: center; color: var(--text-muted);">
+            <a href="/" style="color: var(--primary);">← Back to Home</a>
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

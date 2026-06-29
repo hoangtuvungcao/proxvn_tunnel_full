@@ -471,39 +471,26 @@ func (s *server) startHTTPServer(cfg *config.Config, db *database.Database) {
 	log.Printf("[http] Serving dashboard from: %s", dashboardDir)
 	router.Static("/dashboard", dashboardDir)
 
-	// Serve static files for Landing Page
-	landingDir := filepath.Join(dashboardDir, "landing")
-	router.Static("/assets", landingDir) // Helper for assets if needed, but we use root
+	// Serve documentation pages: /docs/getting-started.html etc.
+	router.Static("/docs", filepath.Join(dashboardDir, "docs"))
 
-	// Serve Landing Page files directly at root to work with relative links
-	router.StaticFile("/", filepath.Join(landingDir, "index.html"))
+	// Serve the new landing page (home.html) at root.
+	router.StaticFile("/", filepath.Join(dashboardDir, "home.html"))
+	router.StaticFile("/home.html", filepath.Join(dashboardDir, "home.html"))
+	router.StaticFile("/index.html", filepath.Join(dashboardDir, "home.html"))
 
-	// Force correct MIME types for CSS/JS
-	router.GET("/style.css", func(c *gin.Context) {
-		c.Header("Content-Type", "text/css")
-		c.File(filepath.Join(landingDir, "style.css"))
-	})
+	// Serve frontend asset folders so relative css/js links resolve.
+	router.Static("/css", filepath.Join(dashboardDir, "css"))
+	router.Static("/js", filepath.Join(dashboardDir, "js"))
 
-	router.GET("/script.js", func(c *gin.Context) {
-		c.Header("Content-Type", "application/javascript")
-		c.File(filepath.Join(landingDir, "script.js"))
-	})
-
-	// Serve Downloads (Map virtual paths to actual binaries)
-	// We assume 'bin' is in CWD or parent
+	// Serve Downloads from the bin directory (bin/client/*, bin/server/*).
+	// We assume 'bin' is in CWD or parent.
 	binDir := "bin"
 	if _, err := os.Stat("bin"); os.IsNotExist(err) {
 		binDir = "." // If running inside bin
 	}
-
-	router.StaticFile("/downloads/proxvn-windows.zip", filepath.Join(binDir, "proxvn.exe")) // Map zip to exe for now or just generic
-	router.StaticFile("/downloads/proxvn.exe", filepath.Join(binDir, "proxvn.exe"))
-	router.StaticFile("/downloads/proxvn-linux-client", filepath.Join(binDir, "proxvn-linux-client"))
-	router.StaticFile("/downloads/proxvn-mac-intel", filepath.Join(binDir, "proxvn-mac-intel"))
-	router.StaticFile("/downloads/proxvn-mac-m1", filepath.Join(binDir, "proxvn-mac-m1"))
-	router.StaticFile("/downloads/proxvn-android", filepath.Join(binDir, "proxvn-android"))
-	router.StaticFile("/downloads/proxvn-linux-server", filepath.Join(binDir, "proxvn-linux-server"))
-	router.StaticFile("/downloads/svproxvn.exe", filepath.Join(binDir, "svproxvn.exe"))
+	router.Static("/bin", binDir)
+	router.Static("/downloads", binDir) // legacy alias
 
 	// Explicitly redirect /dashboard/ to /dashboard/index.html if needed,
 	// or ensure main route hits it.

@@ -38,7 +38,8 @@ type HTTPProxyServer struct {
 	keyFile        string
 	baseDomain     string                 // Configurable base domain
 	httpPort       int                    // Configurable HTTP port
-	landingDir     string                 // Landing page directory
+	frontendDir    string                 // Frontend root (home.html, docs/, css/, js/)
+	landingDir     string                 // Legacy landing page directory
 	binDir         string                 // Bin directory for downloads
 	dashboardProxy *httputil.ReverseProxy // Proxy to internal dashboard
 }
@@ -61,11 +62,14 @@ type HTTPResponse struct {
 
 // NewHTTPProxyServer creates a new HTTP proxy server
 func NewHTTPProxyServer(certFile, keyFile, baseDomain string, httpPort int) *HTTPProxyServer {
-	// Determine landing page directory
-	landingDir := "../frontend/landing"
-	if _, err := os.Stat("frontend/landing"); err == nil {
-		landingDir = "frontend/landing"
+	// Determine frontend root directory (home.html, docs/, css/, js/)
+	frontendDir := "../frontend"
+	if _, err := os.Stat("frontend"); err == nil {
+		frontendDir = "frontend"
 	}
+
+	// Legacy landing page directory (kept for backward-compatible assets)
+	landingDir := filepath.Join(frontendDir, "landing")
 
 	// Determine bin directory
 	binDir := "bin"
@@ -74,13 +78,14 @@ func NewHTTPProxyServer(certFile, keyFile, baseDomain string, httpPort int) *HTT
 	}
 
 	return &HTTPProxyServer{
-		subdomains: make(map[string]ClientSession),
-		certFile:   certFile,
-		keyFile:    keyFile,
-		baseDomain: baseDomain,
-		httpPort:   httpPort,
-		landingDir: landingDir,
-		binDir:     binDir,
+		subdomains:  make(map[string]ClientSession),
+		certFile:    certFile,
+		keyFile:     keyFile,
+		baseDomain:  baseDomain,
+		httpPort:    httpPort,
+		frontendDir: frontendDir,
+		landingDir:  landingDir,
+		binDir:      binDir,
 	}
 }
 
@@ -310,44 +315,52 @@ func (p *HTTPProxyServer) serveLandingPage(w http.ResponseWriter, r *http.Reques
 	// Logging for debugging
 	log.Printf("[http] Main domain request: %s %s (Host: %s)", r.Method, r.URL.Path, r.Host)
 
-	// Handle downloads
+	// Handle binary downloads served from the bin directory (bin/client/*, bin/server/*).
+	// Legacy /downloads/* paths are mapped to the same bin directory.
+	if strings.HasPrefix(r.URL.Path, "/bin/") {
+		p.serveFromDir(w, r, p.binDir, strings.TrimPrefix(r.URL.Path, "/bin/"))
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/downloads/") {
-		filename := strings.TrimPrefix(r.URL.Path, "/downloads/")
-		filePath := filepath.Join(p.binDir, filename)
+		p.serveFromDir(w, r, p.binDir, strings.TrimPrefix(r.URL.Path, "/downloads/"))
+		return
+	}
 
-		if _, err := os.Stat(filePath); err == nil {
-			http.ServeFile(w, r, filePath)
-			return
-		}
+	// Documentation pages: /docs/getting-started.html etc.
+	if strings.HasPrefix(r.URL.Path, "/docs/") {
+		p.serveFromDir(w, r, filepath.Join(p.frontendDir, "docs"), strings.TrimPrefix(r.URL.Path, "/docs/"))
+		return
+	}
+
+	// Serve frontend static files
+	switch r.URL.Path {
+	case "/", "/home.html", "/index.html":
+		http.ServeFile(w, r, filepath.Join(p.frontendDir, "home.html"))
+	default:
+		// Try to serve any other asset from the frontend root (css/, js/, etc.)
+		p.serveFromDir(w, r, p.frontendDir, strings.TrimPrefix(r.URL.Path, "/"))
+	}
+}
+
+// serveFromDir safely serves a relative path from baseDir, guarding against
+// path traversal and setting the correct MIME type for css/js assets.
+func (p *HTTPProxyServer) serveFromDir(w http.ResponseWriter, r *http.Request, baseDir, rel string) {
+	// Clean the relative path and reject traversal outside baseDir.
+	cleaned := filepath.Clean("/" + rel)
+	filePath := filepath.Join(baseDir, cleaned)
+
+	info, err := os.Stat(filePath)
+	if err != nil || info.IsDir() {
 		http.NotFound(w, r)
 		return
 	}
 
-	// Serve landing page static files
-	switch r.URL.Path {
-	case "/", "/index.html":
-		http.ServeFile(w, r, filepath.Join(p.landingDir, "index.html"))
-	case "/style.css":
+	if strings.HasSuffix(filePath, ".css") {
 		w.Header().Set("Content-Type", "text/css")
-		http.ServeFile(w, r, filepath.Join(p.landingDir, "style.css"))
-	case "/script.js":
+	} else if strings.HasSuffix(filePath, ".js") {
 		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFile(w, r, filepath.Join(p.landingDir, "script.js"))
-	default:
-		// Try to serve from landing directory
-		filePath := filepath.Join(p.landingDir, r.URL.Path)
-		if _, err := os.Stat(filePath); err == nil {
-			// Set MIME type based on extension for other files in landing dir
-			if strings.HasSuffix(filePath, ".css") {
-				w.Header().Set("Content-Type", "text/css")
-			} else if strings.HasSuffix(filePath, ".js") {
-				w.Header().Set("Content-Type", "application/javascript")
-			}
-			http.ServeFile(w, r, filePath)
-		} else {
-			http.NotFound(w, r)
-		}
 	}
+	http.ServeFile(w, r, filePath)
 }
 
 // extractSubdomain extracts the subdomain from the Host header

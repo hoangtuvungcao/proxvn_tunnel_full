@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLI Reference - ProxVN Tunnel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --accent: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        header {
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .logo i { color: var(--primary); }
+        h1 {
+            font-size: 2.5rem;
+            margin: 2rem 0 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h2 {
+            font-size: 1.75rem;
+            margin: 3rem 0 1rem;
+            color: var(--text);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            font-size: 1.25rem;
+            margin: 2rem 0 1rem;
+            color: var(--accent);
+        }
+        p {
+            margin: 1rem 0;
+            color: var(--text-muted);
+        }
+        .code-block {
+            background: #1a1f2e;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'Space Grotesk', monospace;
+            color: var(--accent);
+            font-size: 0.95rem;
+        }
+        .inline-code {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.9rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .note {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+        .note strong {
+            color: var(--accent);
+        }
+        ul {
+            margin: 1rem 0 1rem 2rem;
+            color: var(--text-muted);
+        }
+        li {
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" class="logo">
+                <i data-lucide="radio"></i>
+                ProxVN Tunnel
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>CLI Reference</h1>
+        <p>Hướng dẫn đầy đủ về ProxVN Client — tất cả lệnh, tham số và ví dụ thực tế.</p>
+
+        <h2>🚀 Cài đặt</h2>
+        <p>Tải binary phù hợp với hệ điều hành của bạn:</p>
+        <ul>
+            <li><strong>Windows:</strong> <code class="inline-code">proxvn-windows-amd64.exe</code></li>
+            <li><strong>Linux:</strong> <code class="inline-code">proxvn-linux-amd64</code> / <code class="inline-code">proxvn-linux-arm64</code></li>
+            <li><strong>macOS:</strong> <code class="inline-code">proxvn-darwin-amd64</code> (Intel) / <code class="inline-code">proxvn-darwin-arm64</code> (Apple Silicon)</li>
+            <li><strong>Android (Termux):</strong> <code class="inline-code">proxvn-android-arm64</code></li>
+        </ul>
+
+        <div class="note">
+            <strong>Server mặc định:</strong> Client đã tự động trỏ tới server free <code class="inline-code">103.77.246.196:8882</code>. Bạn chỉ cần download và chạy ngay.
+        </div>
+
+        <h2>⚙️ Cấu hình</h2>
+        <p>Client đọc cấu hình theo thứ tự ưu tiên:</p>
+        <ol style="margin-left: 2rem; color: var(--text-muted);">
+            <li><strong>CLI flags</strong> (cao nhất)</li>
+            <li><strong>Config file</strong> <code class="inline-code">proxvn.json</code></li>
+            <li><strong>Built-in defaults</strong></li>
+        </ol>
+
+        <h3>Config file (proxvn.json)</h3>
+        <div class="code-block">
+            <code>{<br>
+  "server": "103.77.246.196:8882",<br>
+  "proto": "tcp",<br>
+  "host": "localhost",<br>
+  "port": 8080,<br>
+  "ui": true,<br>
+  "cert_pin": "29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8"<br>
+}</code>
+        </div>
+
+        <p>Đặt file này cùng thư mục với binary hoặc <code class="inline-code">~/.proxvn/proxvn.json</code></p>
+
+        <h2>🕹️ Các Chế Độ Chạy</h2>
+
+        <h3>1. HTTP Tunneling</h3>
+        <p>Dùng cho Web Server (NodeJS, Python, Apache...). Server sẽ cấp tự động subdomain HTTPS.</p>
+        <div class="code-block">
+            <code># Cú pháp: proxvn --proto http [LOCAL_PORT]<br>
+./proxvn --proto http 3000<br>
+<br>
+# Kết quả: https://abc123.bacsycay.click → localhost:3000</code>
+        </div>
+
+        <h3>2. TCP Tunneling</h3>
+        <p>Chế độ mặc định. Dùng cho SSH, RDP, MySQL, Redis...</p>
+        <div class="code-block">
+            <code># Cú pháp: proxvn [LOCAL_PORT]<br>
+./proxvn 22      # SSH<br>
+./proxvn 3389    # Remote Desktop<br>
+./proxvn 5432    # PostgreSQL</code>
+        </div>
+
+        <h3>3. UDP Tunneling</h3>
+        <p>Dùng cho Game Server, DNS, VoIP...</p>
+        <div class="code-block">
+            <code># Cú pháp: proxvn --proto udp [LOCAL_PORT]<br>
+./proxvn --proto udp 19132   # Minecraft Bedrock<br>
+./proxvn --proto udp 1194    # OpenVPN</code>
+        </div>
+
+        <h3>4. File Sharing Mode</h3>
+        <p>Biến máy tính thành File Server với Web UI và WebDAV.</p>
+        <div class="code-block">
+            <code># Cú pháp: proxvn --file [PATH] --pass [PASSWORD] [OPTS]<br>
+./proxvn --file ./share --pass 123456 --permissions rwx</code>
+        </div>
+
+        <h2>📋 Tham số (Flags)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Flag</th>
+                    <th>Mặc định</th>
+                    <th>Mô tả</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code class="inline-code">--server</code></td>
+                    <td>103.77.246.196:8882</td>
+                    <td>Địa chỉ Server Tunnel (IP:Port)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--proto</code></td>
+                    <td>tcp</td>
+                    <td>Giao thức: tcp, udp, http</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--host</code></td>
+                    <td>localhost</td>
+                    <td>Host local cần forward</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--port</code></td>
+                    <td>80</td>
+                    <td>Port local (có thể điền trực tiếp)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--id</code></td>
+                    <td>(random)</td>
+                    <td>ID định danh client</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--ui</code></td>
+                    <td>true</td>
+                    <td>Bật giao diện TUI (false = background mode)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--cert-pin</code></td>
+                    <td>(none)</td>
+                    <td>SHA256 cert pin để xác thực server</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--insecure</code></td>
+                    <td>false</td>
+                    <td>Bỏ qua xác thực SSL (chỉ dùng test)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--file</code></td>
+                    <td>""</td>
+                    <td>Đường dẫn thư mục để share</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--pass</code></td>
+                    <td>""</td>
+                    <td>Mật khẩu truy cập file share</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">--permissions</code></td>
+                    <td>rw</td>
+                    <td>Quyền file: r (đọc), rw (đọc ghi), rwx (full)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            <strong>Flag linh hoạt:</strong> Flag có thể đặt ở đâu cũng được — <code class="inline-code">proxvn --proto http 3000 --ui=false</code> và <code class="inline-code">proxvn 3000 --proto http</code> đều hợp lệ.
+        </div>
+
+        <h2>💡 Mẹo & Thủ Thuật</h2>
+
+        <h3>Chạy ngầm (Background)</h3>
+        <p>Trên Linux, dùng <code class="inline-code">nohup</code> hoặc <code class="inline-code">systemd</code>. Tắt UI để log ra file dễ hơn.</p>
+        <div class="code-block">
+            <code>nohup ./proxvn --proto http 3000 --ui=false > client.log 2>&1 &</code>
+        </div>
+
+        <h3>Kết nối Server Riêng (Self-hosted)</h3>
+        <p>Nếu bạn tự host server ProxVN:</p>
+        <div class="code-block">
+            <code>./proxvn --server YOUR_VPS_IP:8882 --proto http 80</code>
+        </div>
+
+        <h3>Certificate Pinning (Bảo mật cao)</h3>
+        <p>Xác thực server bằng cert pin:</p>
+        <div class="code-block">
+            <code>./proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 3000</code>
+        </div>
+
+        <h2>🔍 Troubleshooting</h2>
+
+        <h3>Lỗi "connection refused"</h3>
+        <ul>
+            <li>Kiểm tra IP/Port server</li>
+            <li>Thử telnet: <code class="inline-code">telnet 103.77.246.196 8882</code></li>
+            <li>Kiểm tra firewall</li>
+        </ul>
+
+        <h3>Subdomain không hoạt động</h3>
+        <ul>
+            <li>Ping thử subdomain: <code class="inline-code">ping abc.bacsycay.click</code></li>
+            <li>Đảm bảo dùng chế độ <code class="inline-code">--proto http</code></li>
+        </ul>
+
+        <p style="margin-top: 3rem; text-align: center; color: var(--text-muted);">
+            <a href="/" style="color: var(--primary);">← Back to Home</a> •
+            <a href="/dashboard/" style="color: var(--primary);">Dashboard</a>
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -94,6 +94,12 @@ function handleWebSocketMessage(data) {
     } else if (data.type === 'metrics') {
         updateStats(data.data);
     }
+    // Add live indicator animation
+    const statusPill = document.getElementById('connectionStatus');
+    if (statusPill) {
+        statusPill.classList.add('pulse-animation');
+        setTimeout(() => statusPill.classList.remove('pulse-animation'), 300);
+    }
 }
 
 // Load Initial Data
@@ -360,13 +366,15 @@ function toggleTheme() {
     applyTheme(nextTheme);
 }
 
-// Auto Refresh
+// Auto Refresh (reduced interval for better UX when WS is down)
 function startAutoRefresh() {
     setInterval(() => {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             fetchMetrics();
             fetchTunnels();
         }
+        // Periodic chart update even with WS open
+        fetchMetrics();
     }, 2000); // Faster Refresh
 }
 

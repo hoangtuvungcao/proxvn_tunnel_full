@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - ProxVN Tunnel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --accent: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        header { padding: 2rem 0; border-bottom: 1px solid var(--border); }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: var(--text); text-decoration: none; }
+        .logo i { color: var(--primary); }
+        h1 { font-size: 2.5rem; margin: 2rem 0 1rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: 1.75rem; margin: 3rem 0 1rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.25rem; margin: 2rem 0 1rem; color: var(--accent); }
+        p { margin: 1rem 0; color: var(--text-muted); }
+        .code-block { background: #1a1f2e; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; overflow-x: auto; }
+        .code-block code { font-family: 'Space Grotesk', monospace; color: var(--accent); font-size: 0.95rem; }
+        .inline-code { background: rgba(102, 126, 234, 0.1); color: var(--primary); padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-family: 'Space Grotesk', monospace; font-size: 0.9rem; }
+        .note { background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent); padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0.5rem; }
+        .note strong { color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; overflow: hidden; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(102, 126, 234, 0.1); color: var(--primary); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        ul, ol { margin: 1rem 0 1rem 2rem; color: var(--text-muted); }
+        li { margin: 0.5rem 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" class="logo">
+                <i data-lucide="radio"></i>
+                ProxVN Tunnel
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Configuration Guide</h1>
+        <p>Hướng dẫn chi tiết về cách cấu hình ProxVN Client qua config file, flags và environment variables.</p>
+
+        <h2>🔧 Configuration Precedence</h2>
+        <p>Client đọc cấu hình theo thứ tự ưu tiên từ cao xuống thấp:</p>
+        <ol>
+            <li><strong>CLI Flags</strong> (cao nhất — override mọi thứ)</li>
+            <li><strong>Config File</strong> (<code class="inline-code">proxvn.json</code>)</li>
+            <li><strong>Built-in Defaults</strong> (thấp nhất)</li>
+        </ol>
+
+        <div class="note">
+            <strong>Ví dụ:</strong> Nếu config file có <code class="inline-code">"proto": "tcp"</code> nhưng bạn chạy <code class="inline-code">./proxvn --proto http</code>, client sẽ dùng <code class="inline-code">http</code> (flag > file).
+        </div>
+
+        <h2>📄 Config File (proxvn.json)</h2>
+
+        <h3>Vị trí tìm kiếm</h3>
+        <p>Client tự động tìm <code class="inline-code">proxvn.json</code> ở các vị trí sau (thứ tự ưu tiên):</p>
+        <ol>
+            <li><code class="inline-code">--config /path/to/custom.json</code> (nếu chỉ định)</li>
+            <li>Environment variable <code class="inline-code">PROXVN_CONFIG</code></li>
+            <li>Thư mục chứa binary</li>
+            <li>Thư mục hiện tại (cwd)</li>
+            <li><code class="inline-code">~/.proxvn/proxvn.json</code></li>
+        </ol>
+
+        <h3>JSON Schema</h3>
+        <div class="code-block">
+            <code>{<br>
+  "server": "103.77.246.196:8882",<br>
+  "proto": "tcp",<br>
+  "host": "localhost",<br>
+  "port": 8080,<br>
+  "ui": true,<br>
+  "cert_pin": "29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8",<br>
+  "insecure": false<br>
+}</code>
+        </div>
+
+        <h3>Các trường (Fields)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Default</th>
+                    <th>Mô tả</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code class="inline-code">server</code></td>
+                    <td>string</td>
+                    <td>103.77.246.196:8882</td>
+                    <td>Địa chỉ server tunnel (IP:Port)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">proto</code></td>
+                    <td>string</td>
+                    <td>tcp</td>
+                    <td>Giao thức: <code class="inline-code">tcp</code>, <code class="inline-code">udp</code>, <code class="inline-code">http</code></td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">host</code></td>
+                    <td>string</td>
+                    <td>localhost</td>
+                    <td>Host local cần forward</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">port</code></td>
+                    <td>int</td>
+                    <td>80</td>
+                    <td>Port local</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">ui</code></td>
+                    <td>bool</td>
+                    <td>true</td>
+                    <td>Bật giao diện TUI (<code class="inline-code">false</code> = background mode)</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">cert_pin</code></td>
+                    <td>string</td>
+                    <td>""</td>
+                    <td>SHA256 cert pin để xác thực server</td>
+                </tr>
+                <tr>
+                    <td><code class="inline-code">insecure</code></td>
+                    <td>bool</td>
+                    <td>false</td>
+                    <td>Bỏ qua xác thực SSL (chỉ dùng test)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>🎯 Use Case Examples</h2>
+
+        <h3>Development Workflow</h3>
+        <p>Dùng config file để không phải gõ lại flag mỗi lần:</p>
+        <div class="code-block">
+            <code># proxvn.json<br>
+{<br>
+  "proto": "http",<br>
+  "port": 3000,<br>
+  "ui": true<br>
+}<br>
+<br>
+# Chạy<br>
+./proxvn   # tự động dùng config</code>
+        </div>
+
+        <h3>Production Server (Background)</h3>
+        <div class="code-block">
+            <code># proxvn.json<br>
+{<br>
+  "server": "103.77.246.196:8882",<br>
+  "proto": "tcp",<br>
+  "port": 22,<br>
+  "ui": false,<br>
+  "cert_pin": "29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8"<br>
+}<br>
+<br>
+# Chạy bằng systemd hoặc nohup<br>
+nohup ./proxvn > tunnel.log 2>&1 &</code>
+        </div>
+
+        <h3>Multiple Tunnels</h3>
+        <p>Tạo nhiều config file cho từng tunnel:</p>
+        <div class="code-block">
+            <code># web.json<br>
+{ "proto": "http", "port": 3000 }<br>
+<br>
+# ssh.json<br>
+{ "proto": "tcp", "port": 22 }<br>
+<br>
+# Chạy song song<br>
+./proxvn --config web.json &<br>
+./proxvn --config ssh.json &</code>
+        </div>
+
+        <h2>🔒 Security Best Practices</h2>
+
+        <h3>Luôn dùng Certificate Pinning</h3>
+        <p>Cert pin của server free public:</p>
+        <div class="code-block">
+            <code>29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8</code>
+        </div>
+        <p>Thêm vào config:</p>
+        <div class="code-block">
+            <code>{<br>
+  "cert_pin": "29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8"<br>
+}</code>
+        </div>
+
+        <h3>Không commit config có thông tin nhạy cảm</h3>
+        <p>Nếu config chứa API key, token... thêm vào <code class="inline-code">.gitignore</code>:</p>
+        <div class="code-block">
+            <code># .gitignore<br>
+proxvn.json<br>
+*.local.json</code>
+        </div>
+
+        <h2>🌍 Environment Variables</h2>
+        <p>Hiện tại client hỗ trợ:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Mô tả</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code class="inline-code">PROXVN_CONFIG</code></td>
+                    <td>Đường dẫn đến config file custom</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Ví dụ</h3>
+        <div class="code-block">
+            <code>export PROXVN_CONFIG=/etc/proxvn/production.json<br>
+./proxvn</code>
+        </div>
+
+        <h2>🛠️ Advanced: Override per run</h2>
+        <p>Config file + flags kết hợp linh hoạt:</p>
+        <div class="code-block">
+            <code># Config file: proto=tcp, port=22<br>
+# Nhưng lần này muốn HTTP port 3000:<br>
+./proxvn --proto http 3000<br>
+<br>
+# Kết quả: proto=http, port=3000 (flags win)</code>
+        </div>
+
+        <p style="margin-top: 3rem; text-align: center; color: var(--text-muted);">
+            <a href="/" style="color: var(--primary);">← Back to Home</a> •
+            <a href="/docs/cli-guide.html" style="color: var(--primary);">CLI Reference</a>
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

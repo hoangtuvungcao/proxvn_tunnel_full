@@ -98,6 +98,30 @@ body {
     width: 120%;
     height: 120%;
     filter: blur(80px);
+}
+
+/* Pulse animation for realtime updates */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+.pulse-animation .pill-indicator {
+    animation: pulse 0.3s ease-in-out;
+}
+
+/* Enhanced stat card colors */
+.stat-card[data-accent="emerald"] {
+    border-left: 3px solid var(--accent-emerald);
+}
+.stat-card[data-accent="indigo"] {
+    border-left: 3px solid var(--accent-indigo);
+}
+.stat-card[data-accent="cyan"] {
+    border-left: 3px solid var(--accent-cyan);
+}
+.stat-card[data-accent="purple"] {
+    border-left: 3px solid var(--accent-purple);
+}
     opacity: 0.9;
 }
 

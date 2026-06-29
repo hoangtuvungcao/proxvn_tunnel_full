@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxVN Tunnel - Free Public Tunnel Server</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --accent: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.15), transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.15), transparent 50%);
+            z-index: -1;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        /* Header */
+        header {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+        }
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Space Grotesk', monospace;
+            color: var(--text);
+        }
+        .logo i { color: var(--primary); }
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover { color: var(--text); }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 6rem 0 4rem;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 4rem 0;
+        }
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .info-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+        .info-card i {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .info-card.emerald i { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .info-card.indigo i { background: rgba(102, 126, 234, 0.1); color: var(--primary); }
+        .info-card.cyan i { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
+        .info-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .info-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Download Section */
+        .section {
+            padding: 4rem 0;
+            border-top: 1px solid var(--border);
+        }
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .download-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .download-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            background: var(--surface-light);
+        }
+        .download-btn i {
+            font-size: 2rem;
+        }
+        .download-btn .platform {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .download-btn .arch {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Server Info */
+        .server-info {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .info-value {
+            font-family: 'Space Grotesk', monospace;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .copy-btn {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.375rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #1a1f2e;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            position: relative;
+        }
+        .code-block code {
+            font-family: 'Space Grotesk', monospace;
+            color: var(--accent);
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1rem; }
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <header>
+        <div class="container">
+            <div class="logo">
+                <i data-lucide="radio"></i>
+                ProxVN
+            </div>
+            <nav>
+                <a href="#download">Download</a>
+                <a href="#docs">Docs</a>
+                <a href="/dashboard/">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Free Public Tunnel Server</h1>
+                <p>Expose local TCP/UDP/HTTP services to the internet instantly. No registration, no credit card.</p>
+                <div class="hero-actions">
+                    <a href="#download" class="btn btn-primary">
+                        <i data-lucide="download"></i>
+                        Download Client
+                    </a>
+                    <a href="#docs" class="btn btn-primary">
+                        <i data-lucide="book-open"></i>
+                        Read Docs
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="info-grid">
+                <div class="info-card emerald">
+                    <i data-lucide="zap"></i>
+                    <h3>Zero Config</h3>
+                    <p>Chạy ngay không cần setup. Server free public đã sẵn sàng phục vụ.</p>
+                </div>
+                <div class="info-card indigo">
+                    <i data-lucide="shield-check"></i>
+                    <h3>Secure TLS</h3>
+                    <p>Certificate pinning bảo vệ tunnel control connection của bạn.</p>
+                </div>
+                <div class="info-card cyan">
+                    <i data-lucide="server"></i>
+                    <h3>Multi-Protocol</h3>
+                    <p>TCP, UDP, HTTP tunneling. SSH, RDP, Game Server, Web — tất cả đều OK.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Download Client</h2>
+                    <p>Chọn binary phù hợp với hệ điều hành của bạn</p>
+                </div>
+
+                <div class="download-grid">
+                    <a href="/bin/client/proxvn-windows-amd64.exe" class="download-btn" download>
+                        <i data-lucide="monitor"></i>
+                        <span class="platform">Windows</span>
+                        <span class="arch">x64</span>
+                    </a>
+                    <a href="/bin/client/proxvn-linux-amd64" class="download-btn" download>
+                        <i data-lucide="hard-drive"></i>
+                        <span class="platform">Linux</span>
+                        <span class="arch">x64</span>
+                    </a>
+                    <a href="/bin/client/proxvn-linux-arm64" class="download-btn" download>
+                        <i data-lucide="hard-drive"></i>
+                        <span class="platform">Linux</span>
+                        <span class="arch">ARM64</span>
+                    </a>
+                    <a href="/bin/client/proxvn-darwin-amd64" class="download-btn" download>
+                        <i data-lucide="laptop"></i>
+                        <span class="platform">macOS</span>
+                        <span class="arch">Intel</span>
+                    </a>
+                    <a href="/bin/client/proxvn-darwin-arm64" class="download-btn" download>
+                        <i data-lucide="laptop"></i>
+                        <span class="platform">macOS</span>
+                        <span class="arch">Apple Silicon</span>
+                    </a>
+                    <a href="/bin/client/proxvn-android-arm64" class="download-btn" download>
+                        <i data-lucide="smartphone"></i>
+                        <span class="platform">Android</span>
+                        <span class="arch">Termux ARM64</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Server Information</h2>
+                    <p>Free public server đã sẵn sàng — copy & paste để dùng ngay</p>
+                </div>
+
+                <div class="server-info">
+                    <div class="info-row">
+                        <span class="info-label">Server Address</span>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span class="info-value" id="serverAddr">103.77.246.196:8882</span>
+                            <button class="copy-btn" onclick="copyToClipboard('103.77.246.196:8882', this)">Copy</button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">HTTP Domain</span>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span class="info-value">bacsycay.click</span>
+                            <button class="copy-btn" onclick="copyToClipboard('bacsycay.click', this)">Copy</button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Certificate Pin (SHA256)</span>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span class="info-value" style="font-size: 0.85rem;">29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8</span>
+                            <button class="copy-btn" onclick="copyToClipboard('29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8', this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top: 3rem;">
+                    <h3>Quick Start</h3>
+                </div>
+
+                <div class="code-block">
+                    <code># HTTP Tunnel (Web Server)<br>./proxvn --proto http 3000</code>
+                </div>
+                <div class="code-block">
+                    <code># TCP Tunnel (SSH)<br>./proxvn 22</code>
+                </div>
+                <div class="code-block">
+                    <code># UDP Tunnel (Minecraft Bedrock)<br>./proxvn --proto udp 19132</code>
+                </div>
+            </div>
+        </section>
+
+        <section id="docs" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Documentation</h2>
+                    <p>Hướng dẫn đầy đủ về CLI client và cấu hình</p>
+                </div>
+
+                <div class="info-grid">
+                    <a href="/docs/getting-started.html" class="info-card emerald" style="text-decoration: none;">
+                        <i data-lucide="play-circle"></i>
+                        <h3>Getting Started</h3>
+                        <p>Cài đặt và chạy tunnel đầu tiên trong 2 phút</p>
+                    </a>
+                    <a href="/docs/configuration.html" class="info-card indigo" style="text-decoration: none;">
+                        <i data-lucide="settings"></i>
+                        <h3>Configuration</h3>
+                        <p>Config file, flags, environment variables</p>
+                    </a>
+                    <a href="/docs/cli-guide.html" class="info-card cyan" style="text-decoration: none;">
+                        <i data-lucide="terminal"></i>
+                        <h3>CLI Reference</h3>
+                        <p>Tất cả lệnh và tham số của client</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 ProxVN Tunnel • Free Public Server • <a href="https://github.com/vantrong291/proxvn_tunnel_full" style="color: var(--primary);">GitHub</a></p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = 'var(--accent)';
+                btn.style.color = 'white';
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
