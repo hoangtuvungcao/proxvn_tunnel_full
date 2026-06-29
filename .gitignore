@@ -48,3 +48,9 @@ tmp/
 
 # Claude Code local session state
 .claude/
+
+# Stray compiled binaries (build to bin/ via build-all.sh)
+src/backend/server
+src/backend/client
+src/backend/proxvn-server
+src/backend/proxvn-client
