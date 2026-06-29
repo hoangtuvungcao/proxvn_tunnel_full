@@ -240,6 +240,20 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 
 	flag.Parse()
 
+	// Allow flags to appear AFTER positional args too (Go's flag package stops
+	// at the first non-flag). e.g. `proxvn --proto http 3000 --ui=false` and
+	// `proxvn 3000 --proto http` both work. Collect all positionals while
+	// re-parsing flags found between them.
+	var positionals []string
+	rest := flag.Args()
+	for len(rest) > 0 {
+		positionals = append(positionals, rest[0])
+		if err := flag.CommandLine.Parse(rest[1:]); err != nil {
+			break
+		}
+		rest = flag.Args()
+	}
+
 	log.SetOutput(os.Stderr)
 	log.SetFlags(log.LstdFlags)
 
@@ -271,7 +285,7 @@ Licensed under FREE TO USE - NON-COMMERCIAL ONLY
 	}
 	localPort := *portFlag
 
-	args := normalizedArgs(flag.Args())
+	args := normalizedArgs(positionals)
 	switch len(args) {
 	case 0:
 		// use flag defaults

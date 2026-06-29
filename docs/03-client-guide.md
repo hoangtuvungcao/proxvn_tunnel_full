@@ -4,10 +4,17 @@ ProxVN Client là công cụ dòng lệnh (CLI) giúp bạn kết nối từ má
 
 ## 📥 Cài đặt
 
-Tải binary phù hợp với hệ điều hành của bạn:
-- **Windows**: `proxvn.exe`
-- **Linux**: `proxvn-linux-client`
-- **macOS**: `proxvn-mac-intel` hoặc `proxvn-mac-m1`
+Tải binary phù hợp với hệ điều hành của bạn (thư mục `bin/client/`):
+- **Windows**: `proxvn-windows-amd64.exe`
+- **Linux**: `proxvn-linux-amd64` / `proxvn-linux-arm64`
+- **macOS**: `proxvn-darwin-amd64` (Intel) / `proxvn-darwin-arm64` (Apple Silicon)
+- **Android (Termux)**: `proxvn-android-arm64`
+
+> Mặc định client trỏ tới server free `103.77.246.196:8882`. Đổi bằng file
+> `proxvn.json` hoặc flag `--server` (xem [02 - Configuration](02-configuration.md)).
+
+> **Flag đặt ở đâu cũng được**: `proxvn --proto http 3000 --ui=false`,
+> `proxvn 3000 --proto http` đều hợp lệ (flag có thể đứng trước hoặc sau số port).
 
 ## 🕹️ Các Chế Độ Chạy
 
