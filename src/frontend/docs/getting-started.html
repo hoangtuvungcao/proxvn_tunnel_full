@@ -8,10 +8,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #667eea;
+            --primary: #7c8cff;
             --accent: #10b981;
-            --bg: #0f172a;
-            --surface: #1e293b;
+            --bg: #0b1120;
+            --surface: #131c31;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
             --border: rgba(148, 163, 184, 0.1);
@@ -41,7 +41,7 @@
     <header>
         <div class="container">
             <a href="/" class="logo">
-                <i data-lucide="radio"></i>
+                <i data-lucide="waypoints"></i>
                 ProxVN Tunnel
             </a>
         </div>
@@ -55,16 +55,18 @@
             <strong>Zero Configuration:</strong> Server free public đã sẵn sàng tại <code class="inline-code">103.77.246.196:8882</code>. Bạn chỉ cần download client và chạy ngay — không cần đăng ký, không cần credit card.
         </div>
 
-        <h2>📥 Bước 1: Download Client</h2>
+        <h2>Bước 1: Download Client</h2>
         <p>Chọn binary phù hợp với hệ điều hành của bạn:</p>
         <ul>
             <li><strong>Windows:</strong> <a href="/bin/client/proxvn-windows-amd64.exe" style="color: var(--primary);">proxvn-windows-amd64.exe</a></li>
             <li><strong>Linux x64:</strong> <a href="/bin/client/proxvn-linux-amd64" style="color: var(--primary);">proxvn-linux-amd64</a></li>
+            <li><strong>Linux ARM64:</strong> <a href="/bin/client/proxvn-linux-arm64" style="color: var(--primary);">proxvn-linux-arm64</a></li>
             <li><strong>macOS Intel:</strong> <a href="/bin/client/proxvn-darwin-amd64" style="color: var(--primary);">proxvn-darwin-amd64</a></li>
             <li><strong>macOS Apple Silicon:</strong> <a href="/bin/client/proxvn-darwin-arm64" style="color: var(--primary);">proxvn-darwin-arm64</a></li>
+            <li><strong>Android (Termux):</strong> <a href="/bin/client/proxvn-android-arm64" style="color: var(--primary);">proxvn-android-arm64</a></li>
         </ul>
 
-        <h2>⚡ Bước 2: Chạy Tunnel Đầu Tiên</h2>
+        <h2>Bước 2: Chạy Tunnel Đầu Tiên</h2>
 
         <div class="step">
             <h3><span class="step-number">1</span>HTTP Tunnel (Web Server)</h3>
@@ -79,7 +81,7 @@ proxvn-windows-amd64.exe --proto http 3000</code>
             </div>
             <p>Client sẽ kết nối server và hiển thị URL public:</p>
             <div class="code-block">
-                <code style="color: #34d399;">✓ HTTP Tunnel Active<br>
+                <code style="color: #34d399;">HTTP Tunnel Active<br>
 Public URL: https://abc123.bacsycay.click<br>
 Forwarding to: localhost:3000</code>
             </div>
@@ -93,7 +95,7 @@ Forwarding to: localhost:3000</code>
             </div>
             <p>Kết quả:</p>
             <div class="code-block">
-                <code style="color: #34d399;">✓ TCP Tunnel Active<br>
+                <code style="color: #34d399;">TCP Tunnel Active<br>
 Public Address: 103.77.246.196:15234<br>
 Forwarding to: localhost:22</code>
             </div>
@@ -112,7 +114,7 @@ Forwarding to: localhost:22</code>
             <p>Players kết nối qua <code class="inline-code">103.77.246.196:15678</code> (port động)</p>
         </div>
 
-        <h2>🎯 Use Cases Phổ Biến</h2>
+        <h2>Use Cases Phổ Biến</h2>
 
         <h3>Web Development</h3>
         <div class="code-block">
@@ -150,7 +152,7 @@ proxvn.exe 3389<br>
 ./proxvn 27017</code>
         </div>
 
-        <h2>⚙️ Tùy Chỉnh Nâng Cao</h2>
+        <h2>Tùy Chỉnh Nâng Cao</h2>
 
         <h3>Config File</h3>
         <p>Tạo file <code class="inline-code">proxvn.json</code> cùng thư mục với binary:</p>
@@ -177,14 +179,14 @@ nohup ./proxvn --proto http 3000 --ui=false > tunnel.log 2>&1 &<br>
 Start-Process proxvn.exe -ArgumentList "--proto","http","3000","--ui=false" -WindowStyle Hidden</code>
         </div>
 
-        <h2>🔒 Certificate Pinning (Khuyến nghị)</h2>
+        <h2>Certificate Pinning (Khuyến nghị)</h2>
         <p>Để bảo vệ kết nối tunnel control, dùng cert pin:</p>
         <div class="code-block">
             <code>./proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 3000</code>
         </div>
         <p>Cert pin của server free: <code class="inline-code">29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8</code></p>
 
-        <h2>📚 Next Steps</h2>
+        <h2>Next Steps</h2>
         <ul>
             <li><a href="/docs/cli-guide.html" style="color: var(--primary);">CLI Reference</a> — tất cả lệnh và tham số</li>
             <li><a href="/docs/configuration.html" style="color: var(--primary);">Configuration Guide</a> — config file chi tiết</li>

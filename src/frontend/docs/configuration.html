@@ -8,10 +8,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #667eea;
+            --primary: #7c8cff;
             --accent: #10b981;
-            --bg: #0f172a;
-            --surface: #1e293b;
+            --bg: #0b1120;
+            --surface: #131c31;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
             --border: rgba(148, 163, 184, 0.1);
@@ -43,7 +43,7 @@
     <header>
         <div class="container">
             <a href="/" class="logo">
-                <i data-lucide="radio"></i>
+                <i data-lucide="waypoints"></i>
                 ProxVN Tunnel
             </a>
         </div>
@@ -53,7 +53,7 @@
         <h1>Configuration Guide</h1>
         <p>Hướng dẫn chi tiết về cách cấu hình ProxVN Client qua config file, flags và environment variables.</p>
 
-        <h2>🔧 Configuration Precedence</h2>
+        <h2>Configuration Precedence</h2>
         <p>Client đọc cấu hình theo thứ tự ưu tiên từ cao xuống thấp:</p>
         <ol>
             <li><strong>CLI Flags</strong> (cao nhất — override mọi thứ)</li>
@@ -65,7 +65,7 @@
             <strong>Ví dụ:</strong> Nếu config file có <code class="inline-code">"proto": "tcp"</code> nhưng bạn chạy <code class="inline-code">./proxvn --proto http</code>, client sẽ dùng <code class="inline-code">http</code> (flag > file).
         </div>
 
-        <h2>📄 Config File (proxvn.json)</h2>
+        <h2>Config File (proxvn.json)</h2>
 
         <h3>Vị trí tìm kiếm</h3>
         <p>Client tự động tìm <code class="inline-code">proxvn.json</code> ở các vị trí sau (thứ tự ưu tiên):</p>
@@ -146,7 +146,7 @@
             </tbody>
         </table>
 
-        <h2>🎯 Use Case Examples</h2>
+        <h2>Use Case Examples</h2>
 
         <h3>Development Workflow</h3>
         <p>Dùng config file để không phải gõ lại flag mỗi lần:</p>
@@ -191,7 +191,7 @@ nohup ./proxvn > tunnel.log 2>&1 &</code>
 ./proxvn --config ssh.json &</code>
         </div>
 
-        <h2>🔒 Security Best Practices</h2>
+        <h2>Security Best Practices</h2>
 
         <h3>Luôn dùng Certificate Pinning</h3>
         <p>Cert pin của server free public:</p>
@@ -213,7 +213,7 @@ proxvn.json<br>
 *.local.json</code>
         </div>
 
-        <h2>🌍 Environment Variables</h2>
+        <h2>Environment Variables</h2>
         <p>Hiện tại client hỗ trợ:</p>
         <table>
             <thead>
@@ -236,7 +236,7 @@ proxvn.json<br>
 ./proxvn</code>
         </div>
 
-        <h2>🛠️ Advanced: Override per run</h2>
+        <h2>Advanced: Override per run</h2>
         <p>Config file + flags kết hợp linh hoạt:</p>
         <div class="code-block">
             <code># Config file: proto=tcp, port=22<br>

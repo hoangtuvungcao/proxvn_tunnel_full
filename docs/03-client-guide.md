@@ -2,7 +2,7 @@
 
 ProxVN Client là công cụ dòng lệnh (CLI) giúp bạn kết nối từ máy local tới ProxVN Server để public dịch vụ.
 
-## 📥 Cài đặt
+## Cài đặt
 
 Tải binary phù hợp với hệ điều hành của bạn (thư mục `bin/client/`):
 - **Windows**: `proxvn-windows-amd64.exe`
@@ -16,7 +16,7 @@ Tải binary phù hợp với hệ điều hành của bạn (thư mục `bin/cl
 > **Flag đặt ở đâu cũng được**: `proxvn --proto http 3000 --ui=false`,
 > `proxvn 3000 --proto http` đều hợp lệ (flag có thể đứng trước hoặc sau số port).
 
-## 🕹️ Các Chế Độ Chạy
+## Các Chế Độ Chạy
 
 ### 1. HTTP Tunneling (`--proto http`)
 Dùng cho Web Server (NodeJS, Python, Apache, Nginx...).
@@ -57,10 +57,10 @@ Hỗ trợ Web Interface (xem, sửa code, upload) và WebDAV (mount drive).
 
 **Tính năng:**
 - **Web UI**: Giao diện đẹp, Dark Mode, kéo thả file.
-- **Editor**: Sửa file code trực tiếp trên trình duyệt (nhấn icon ✏️).
+- **Editor**: Sửa file code trực tiếp trên trình duyệt (nhấn icon Sửa).
 - **WebDAV**: Tương thích Windows Explorer, Finder, Gnome Files.
 
-## ⚙️ Danh sách Tham số (Flags)
+## Danh sách Tham số (Flags)
 
 | Flag | Mặc định | Mô tả |
 | :--- | :--- | :--- |
@@ -70,12 +70,15 @@ Hỗ trợ Web Interface (xem, sửa code, upload) và WebDAV (mount drive).
 | `--port` | `80` | Port local (có thể điền trực tiếp không cần flag này). |
 | `--id` | (random) | ID định danh client (tùy chọn). |
 | `--ui` | `true` | Bật giao diện TUI (`false` để chạy background/service). |
+| `--cert-pin` | (none) | SHA256 fingerprint cert server để xác thực (chống MITM). |
 | `--insecure` | `false` | Bỏ qua xác thực SSL (chỉ dùng test). |
+| `--config` | (auto) | Đường dẫn file cấu hình client (`proxvn.json`). |
 | `--file` | `""` | Đường dẫn thư mục để share. |
+| `--user` | `proxvn` | Username xác thực WebDAV cho file share. |
 | `--pass` | `""` | Mật khẩu truy cập file share. |
 | `--permissions` | `rw` | Quyền file: `r` (đọc), `rw` (đọc ghi), `rwx` (full). |
 
-## 💡 Mẹo & Thủ Thuật
+## Mẹo & Thủ Thuật
 
 ### Chạy ngầm (Background)
 Trên Linux, dùng `nohup` hoặc `systemd`. Tắt UI để log ra file dễ hơn.

@@ -43,7 +43,7 @@ Client tự tìm file theo thứ tự: `--config <path>` → biến môi trườ
   "port": 80,
   "proto": "tcp",
   "ui": true,
-  "cert_pin": "",
+  "cert_pin": "29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8",
   "insecure": false
 }
 ```

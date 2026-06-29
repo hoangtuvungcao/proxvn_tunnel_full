@@ -10,10 +10,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #667eea;
+            --primary: #7c8cff;
             --accent: #10b981;
-            --bg: #0f172a;
-            --surface: #1e293b;
+            --bg: #0b1120;
+            --surface: #131c31;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
             --border: rgba(148, 163, 184, 0.1);
@@ -133,7 +133,7 @@
     <header>
         <div class="container">
             <a href="/" class="logo">
-                <i data-lucide="radio"></i>
+                <i data-lucide="waypoints"></i>
                 ProxVN Tunnel
             </a>
         </div>
@@ -143,7 +143,7 @@
         <h1>CLI Reference</h1>
         <p>Hướng dẫn đầy đủ về ProxVN Client — tất cả lệnh, tham số và ví dụ thực tế.</p>
 
-        <h2>🚀 Cài đặt</h2>
+        <h2>Cài đặt</h2>
         <p>Tải binary phù hợp với hệ điều hành của bạn:</p>
         <ul>
             <li><strong>Windows:</strong> <code class="inline-code">proxvn-windows-amd64.exe</code></li>
@@ -156,7 +156,7 @@
             <strong>Server mặc định:</strong> Client đã tự động trỏ tới server free <code class="inline-code">103.77.246.196:8882</code>. Bạn chỉ cần download và chạy ngay.
         </div>
 
-        <h2>⚙️ Cấu hình</h2>
+        <h2>Cấu hình</h2>
         <p>Client đọc cấu hình theo thứ tự ưu tiên:</p>
         <ol style="margin-left: 2rem; color: var(--text-muted);">
             <li><strong>CLI flags</strong> (cao nhất)</li>
@@ -178,7 +178,7 @@
 
         <p>Đặt file này cùng thư mục với binary hoặc <code class="inline-code">~/.proxvn/proxvn.json</code></p>
 
-        <h2>🕹️ Các Chế Độ Chạy</h2>
+        <h2>Các Chế Độ Chạy</h2>
 
         <h3>1. HTTP Tunneling</h3>
         <p>Dùng cho Web Server (NodeJS, Python, Apache...). Server sẽ cấp tự động subdomain HTTPS.</p>
@@ -213,7 +213,7 @@
 ./proxvn --file ./share --pass 123456 --permissions rwx</code>
         </div>
 
-        <h2>📋 Tham số (Flags)</h2>
+        <h2>Tham số (Flags)</h2>
         <table>
             <thead>
                 <tr>
@@ -285,7 +285,7 @@
             <strong>Flag linh hoạt:</strong> Flag có thể đặt ở đâu cũng được — <code class="inline-code">proxvn --proto http 3000 --ui=false</code> và <code class="inline-code">proxvn 3000 --proto http</code> đều hợp lệ.
         </div>
 
-        <h2>💡 Mẹo & Thủ Thuật</h2>
+        <h2>Mẹo & Thủ Thuật</h2>
 
         <h3>Chạy ngầm (Background)</h3>
         <p>Trên Linux, dùng <code class="inline-code">nohup</code> hoặc <code class="inline-code">systemd</code>. Tắt UI để log ra file dễ hơn.</p>
@@ -305,7 +305,7 @@
             <code>./proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 3000</code>
         </div>
 
-        <h2>🔍 Troubleshooting</h2>
+        <h2>Troubleshooting</h2>
 
         <h3>Lỗi "connection refused"</h3>
         <ul>

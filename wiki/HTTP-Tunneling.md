@@ -1,24 +1,24 @@
-# HTTP Tunneling Guide 🌐
+# HTTP Tunneling Guide 
 
 HTTP Tunneling là tính năng **mới nhất của ProxVN v4.0**, cho phép bạn nhận subdomain HTTPS đẹp ngay lập tức - giống như ngrok!
 
-## 🎯 What is HTTP Tunneling?
+## What is HTTP Tunneling?
 
 HTTP Tunneling biến localhost của bạn thành URL HTTPS công khai:
 
 ```
-localhost:3000  →  https://abc123.bacsycay.click
+localhost:3000    https://abc123.bacsycay.click
 ```
 
 ### Ưu điểm
-- ✅ **URL đẹp** - Dễ chia sẻ với client/team
-- ✅ **HTTPS miễn phí** - SSL certificate tự động
-- ✅ **Zero config** - Không cần port forwarding
-- ✅ **Share ngay** - Chỉ 1 command
+- **URL đẹp** - Dễ chia sẻ với client/team
+- **HTTPS miễn phí** - SSL certificate tự động
+- **Zero config** - Không cần port forwarding
+- **Share ngay** - Chỉ 1 command
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Basic Usage
 ```bash
@@ -34,10 +34,10 @@ proxvn --proto http 3000
 
 **Output:**
 ```
-✅ HTTP Tunnel Active
-🌐 Public URL: https://a1b2c3.bacsycay.click
-📍 Local: localhost:3000
-🔒 Security: TLS Encrypted
+ HTTP Tunnel Active
+ Public URL: https://a1b2c3.bacsycay.click
+ Local: localhost:3000
+ Security: TLS Encrypted
 ```
 
 #### Share Node.js API (port 8080)
@@ -57,7 +57,7 @@ proxvn --proto http 443
 
 ---
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Custom Server
 Kết nối tới VPS riêng:
@@ -79,7 +79,7 @@ proxvn --id my-laptop --proto http 3000
 
 ---
 
-## 💡 Common Use Cases
+## Common Use Cases
 
 ### 1. Web Development
 
@@ -142,12 +142,12 @@ proxvn --proto http 8000
 
 ---
 
-## 🔐 Security Best Practices
+## Security Best Practices
 
 ### 1. Don't Share Sensitive Data
-- ❌ Không tunnel database admin panels
-- ❌ Không public credentials/API keys
-- ✅ Chỉ tunnel cho development/testing
+- Không tunnel database admin panels
+- Không public credentials/API keys
+- Chỉ tunnel cho development/testing
 
 ### 2. Use Authentication
 Thêm basic auth vào app của bạn:
@@ -177,13 +177,13 @@ def verify_password(username, password):
 ### 3. Monitor Traffic
 Check client TUI để xem requests:
 ```
-📊 Traffic: ⬆️ 1.2 KB/s ⬇️ 450 B/s
-🔌 Sessions: active 2 | total 15
+ Traffic:  1.2 KB/s  450 B/s
+ Sessions: active 2 | total 15
 ```
 
 ---
 
-## 🎨 Working with Frameworks
+## Working with Frameworks
 
 ### React/Vite
 ```bash
@@ -236,7 +236,7 @@ proxvn --proto http 3000
 
 ---
 
-## 🌍 Testing from Different Locations
+## Testing from Different Locations
 
 ### Test from Mobile Device
 1. Start tunnel:
@@ -256,26 +256,26 @@ Share URL với client ở bất kỳ đâu:
 
 ---
 
-## ⚠️ Limitations & Notes
+## Limitations & Notes
 
 ### Subdomain is Ephemeral
-- 🔄 **Reconnect:** Giữ subdomain cũ (trong vài phút)
-- 🆕 **Restart:** Subdomain mới
-- ❌ **Server restart:** Mất tất cả subdomain
+- **Reconnect:** Giữ subdomain cũ (trong vài phút)
+- **Restart:** Subdomain mới
+- **Server restart:** Mất tất cả subdomain
 
 ### Not for Production
-- ⚠️ ProxVN là development tool
-- ⚠️ Không dùng cho production deployment
-- ✅ Dùng cho: dev, demo, testing, sharing
+- ProxVN là development tool
+- Không dùng cho production deployment
+- Dùng cho: dev, demo, testing, sharing
 
 ### Performance
-- ⚡ Latency: +20-50ms (qua tunnel)
-- 📊 Bandwidth: Unlimited (nhưng phụ thuộc VPS)
-- 🔌 Concurrent: Support nhiều clients
+- Latency: +20-50ms (qua tunnel)
+- Bandwidth: Unlimited (nhưng phụ thuộc VPS)
+- Concurrent: Support nhiều clients
 
 ---
 
-## 🔄 Auto Reconnect
+## Auto Reconnect
 
 ProxVN tự động reconnect khi mất mạng:
 
@@ -289,7 +289,7 @@ ProxVN tự động reconnect khi mất mạng:
 
 ---
 
-## 🎯 Troubleshooting
+## Troubleshooting
 
 ### "Connection refused"
 **Nguyên nhân:** App chưa chạy hoặc sai port.
@@ -320,21 +320,21 @@ netstat -an | findstr :3000  # Windows
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Client TUI
 Client hiển thị real-time stats:
 ```
 ╔══════════════════════════════════════════════════════
-║  🟢 Status   : ACTIVE
-║  🔗 Local     : localhost:3000
-║  🌐 Public    : https://abc123.bacsycay.click
-║  📡 Protocol  : HTTP
+║   Status   : ACTIVE
+║   Local     : localhost:3000
+║   Public    : https://abc123.bacsycay.click
+║   Protocol  : HTTP
 ╠══════════════════════════════════════════════════════
-║  📊 Traffic  : ⬆️  1.2 KB/s ⬇️  450 B/s
-║  📈 Total    : 15.3 MB ↑  8.7 MB ↓
-║  🔌 Sessions : active 2 | total 47
-║  🏓 Ping     : 21 ms [||||]
+║   Traffic  :   1.2 KB/s   450 B/s
+║   Total    : 15.3 MB   8.7 MB 
+║   Sessions : active 2 | total 47
+║   Ping     : 21 ms [||||]
 ╚══════════════════════════════════════════════════════
 ```
 
@@ -346,12 +346,12 @@ Truy cập `http://VPS_IP:8881/dashboard/` để xem:
 
 ---
 
-## ➡️ Next Steps
+## Next Steps
 
-- 🔌 [TCP & UDP Tunneling](TCP-UDP-Tunneling) - Tunnel nâng cao
-- 🖥️ [Server Setup](Server-Setup) - Self-host server riêng
-- 🛠️ [Troubleshooting](Troubleshooting) - Xử lý sự cố
+- [TCP & UDP Tunneling](TCP-UDP-Tunneling) - Tunnel nâng cao
+- [Server Setup](Server-Setup) - Self-host server riêng
+- [Troubleshooting](Troubleshooting) - Xử lý sự cố
 
 ---
 
-[🏠 Back to Home](Home) | [📖 All Guides](Home#-documentation-structure)
+[ Back to Home](Home) | [ All Guides](Home#-documentation-structure)

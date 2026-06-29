@@ -1,8 +1,8 @@
-# Installation Guide 📥
+# Installation Guide 
 
 Hướng dẫn cài đặt ProxVN trên tất cả các nền tảng.
 
-## 🌐 Method 1: Download from Website (Khuyến nghị)
+## Method 1: Download from Website (Khuyến nghị)
 
 ### Bước 1: Truy cập Website
 [https://bacsycay.click](https://bacsycay.click)
@@ -26,7 +26,7 @@ Hướng dẫn cài đặt ProxVN trên tất cả các nền tảng.
 
 ---
 
-## 💻 Method 2: Build from Source
+## Method 2: Build from Source
 
 ### Requirements
 - [Go 1.21+](https://go.dev/dl/)
@@ -34,7 +34,7 @@ Hướng dẫn cài đặt ProxVN trên tất cả các nền tảng.
 
 ### Bước 1: Clone Repository
 ```bash
-git clone https://github.com/hoangtuvungcao/proxvn_tunnel.git
+git clone https://github.com/hoangtuvungcao/proxvn_tunnel_full.git
 cd proxvn_tunnel
 ```
 
@@ -69,7 +69,7 @@ bin/
 
 ---
 
-## 🪟 Windows Installation
+## Windows Installation
 
 ### Quick Install
 1. Tải `proxvn.exe` từ website
@@ -88,11 +88,11 @@ bin/
    HOẶC
    
 2. Thêm thư mục chứa `proxvn.exe` vào System PATH:
-   - Right-click **This PC** → **Properties**
-   - **Advanced system settings** → **Environment Variables**
-   - Trong **System variables**, chọn **Path** → **Edit**
-   - **New** → Nhập đường dẫn (vd: `C:\Tools`)
-   - **OK** → **OK**
+   - Right-click **This PC**  **Properties**
+   - **Advanced system settings**  **Environment Variables**
+   - Trong **System variables**, chọn **Path**  **Edit**
+   - **New**  Nhập đường dẫn (vd: `C:\Tools`)
+   - **OK**  **OK**
 
 3. Mở PowerShell mới và test:
 ```powershell
@@ -109,7 +109,7 @@ pause
 
 ---
 
-## 🐧 Linux Installation
+## Linux Installation
 
 ### Ubuntu/Debian
 
@@ -164,7 +164,7 @@ proxvn --help
 
 ---
 
-## 🍎 macOS Installation
+## macOS Installation
 
 ### Bước 1: Download
 **Apple Silicon (M1/M2):**
@@ -186,7 +186,7 @@ macOS sẽ block app chưa verified. Fix:
 sudo xattr -d com.apple.quarantine proxvn-mac-m1
 
 # HOẶC System Preferences
-# Security & Privacy → Allow anyway
+# Security & Privacy  Allow anyway
 ```
 
 ### Bước 3: Install System-wide
@@ -200,7 +200,7 @@ proxvn --help
 
 ---
 
-## 🤖 Android Installation (Termux)
+## Android Installation (Termux)
 
 ### Bước 1: Install Termux
 - Tải Termux từ [F-Droid](https://f-droid.org/en/packages/com.termux/)
@@ -239,7 +239,7 @@ Share localhost từ Android:
 
 ---
 
-## ✅ Verify Installation
+## Verify Installation
 
 ### Test Client
 ```bash
@@ -277,7 +277,7 @@ Truy cập URL public để test!
 
 ---
 
-## 🔥 Common Issues
+## Common Issues
 
 ### Windows: "Windows protected your PC"
 **Giải pháp:**
@@ -299,7 +299,7 @@ File chưa trong PATH. Chạy với `./proxvn` hoặc add to PATH.
 
 ---
 
-## 🔄 Update ProxVN
+## Update ProxVN
 
 ### Download New Version
 1. Truy cập [bacsycay.click](https://bacsycay.click)
@@ -313,12 +313,12 @@ proxvn --help | head -n 3
 
 ---
 
-## ➡️ Next Steps
+## Next Steps
 
-- 🌐 [HTTP Tunneling Guide](HTTP-Tunneling) - Sử dụng HTTP mode
-- 🔌 [TCP/UDP Guide](TCP-UDP-Tunneling) - Tunnel nâng cao
-- 🛠️ [Troubleshooting](Troubleshooting) - Nếu gặp vấn đề
+- [HTTP Tunneling Guide](HTTP-Tunneling) - Sử dụng HTTP mode
+- [TCP/UDP Guide](TCP-UDP-Tunneling) - Tunnel nâng cao
+- [Troubleshooting](Troubleshooting) - Nếu gặp vấn đề
 
 ---
 
-[🏠 Back to Home](Home)
+[ Back to Home](Home)

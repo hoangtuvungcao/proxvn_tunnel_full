@@ -1,868 +1,572 @@
 # ProxVN Tunnel Platform
 
-**ProxVN Tunnel** là giải pháp tunneling mạnh mẽ, an toàn và dễ sử dụng, cho phép bạn đưa các dịch vụ local (localhost) ra Internet ngay lập tức. Được xây dựng bằng Golang với hiệu năng cao, hỗ trợ đa nền tảng và đầy đủ các tính năng nâng cao.
+ProxVN Tunnel là giải pháp tunneling viết bằng Go, cho phép đưa dịch vụ chạy trên
+máy local (localhost) ra Internet ngay lập tức — tương tự ngrok nhưng tự host được.
+Hỗ trợ HTTP/HTTPS, TCP, UDP và chia sẻ file (WebDAV), chạy đa nền tảng, một binary
+duy nhất không cần cài đặt.
 
-<p align="left">
-  <a href="https://go.dev/" target="_blank"><img src="https://img.shields.io/badge/Go-1.21%2B-00ADD8?style=flat-square" alt="Go" /></a>
-  <a href="#documentation"><img src="https://img.shields.io/badge/Docs-Complete-success?style=flat-square" alt="Docs" /></a>
-  <a href="#license"><img src="https://img.shields.io/badge/License-Free%20for%20Non--Commercial-blue?style=flat-square" alt="License" /></a>
-</p>
-
----
-
-## 🌟 Tính Năng Nổi Bật
-
-*   **Đa Giao Thức (Multi-Protocol)**:
-    *   **HTTP/HTTPS**: Tự động cấp Subdomain HTTPS (SSL) cho web app.
-    *   **TCP**: Forwarding port cho SSH, RDP, Database, v.v.
-    *   **UDP**: Hỗ trợ Game Server (Minecraft, CS:GO, Palworld...) và các ứng dụng realtime.
-    *   **File Sharing**: Chia sẻ file/folder an toàn như Google Drive hoặc ổ đĩa mạng (WebDAV).
-*   **Bảo Mật Cao (Zero-Trust Security)**:
-    *   Mã hóa toàn diện (TLS 1.3) cho mọi kết nối Control & Data.
-    *   Hỗ trợ xác thực JWT, Rate Limiting, chống DDoS.
-    *   Certificate Pinning để đảm bảo kết nối đến đúng server.
-    *   Chế độ "Private" với Password bảo vệ.
-*   **Quản Lý Toàn Diện**:
-    *   **Web Dashboard**: Giao diện trực quan xem trạng thái, băng thông, connections.
-    *   **In-Browser Editor**: Sửa code/text trực tiếp trên trình duyệt mà không cần tải về.
-*   **Hiệu Năng Cao**: Viết bằng Go, tối ưu RAM/CPU, hỗ trợ hàng vạn kết nối đồng thời.
-*   **Dễ Dàng Triển Khai**: Hỗ trợ Docker, Systemd, Windows Service. Binary chạy ngay không cần cài đặt.
+- Tunnel server công cộng miễn phí: `103.77.246.196:8882`
+- Domain: `bacsycay.click`
+- Dashboard: https://bacsycay.click/dashboard/
 
 ---
 
-## 🎁 Server Công Cộng Miễn Phí
+## Mục lục
 
-Bạn **không cần tự dựng server** — đã có sẵn một server ProxVN miễn phí cho mọi người dùng:
+1. [Tính năng](#tính-năng)
+2. [Server công cộng miễn phí](#server-công-cộng-miễn-phí)
+3. [Cài đặt nhanh](#cài-đặt-nhanh)
+4. [Hướng dẫn Client](#hướng-dẫn-client)
+5. [Certificate Pinning](#certificate-pinning)
+6. [Chia sẻ file (WebDAV)](#chia-sẻ-file-webdav)
+7. [Vận hành Server](#vận-hành-server)
+8. [Triển khai Server riêng](#triển-khai-server-riêng)
+9. [Docker](#docker)
+10. [Build từ source](#build-từ-source)
+11. [Cấu trúc dự án](#cấu-trúc-dự-án)
+12. [Tài liệu](#tài-liệu)
+13. [Troubleshooting](#troubleshooting)
+14. [Bản tham chiếu nhanh](#bản-tham-chiếu-nhanh)
+15. [License](#license)
 
-| | |
+---
+
+## Tính năng
+
+- Đa giao thức:
+  - HTTP/HTTPS: tự động cấp subdomain HTTPS `https://<id>.bacsycay.click` cho web app.
+  - TCP: forward port cho SSH, RDP, MySQL, PostgreSQL...
+  - UDP: cho game server (Minecraft, Palworld, CS...) và ứng dụng realtime.
+  - File sharing: chia sẻ thư mục qua Web UI và WebDAV (mount thành ổ đĩa mạng).
+- Bảo mật:
+  - Mã hóa TLS 1.3 cho kết nối control và data.
+  - Certificate pinning để chống tấn công MITM.
+  - Xác thực JWT, rate limiting, chống DDoS ở phía server.
+  - Chế độ private có mật khẩu cho file sharing.
+- Quản lý:
+  - Web Dashboard realtime: trạng thái tunnel, băng thông, số kết nối.
+  - Trình soạn thảo file trên trình duyệt.
+- Hiệu năng cao, tối ưu RAM/CPU, xử lý nhiều kết nối đồng thời.
+- Triển khai dễ: Docker, systemd, Windows Service; binary chạy ngay.
+
+---
+
+## Server công cộng miễn phí
+
+Không cần tự dựng server — đã có sẵn một server ProxVN miễn phí dùng chung:
+
+| Thành phần | Giá trị |
 | :--- | :--- |
-| **Tunnel server** | `103.77.246.196:8882` (mặc định của client) |
-| **Domain** | `bacsycay.click` |
-| **Dashboard** | https://bacsycay.click/dashboard/ |
+| Tunnel server | `103.77.246.196:8882` (mặc định của client) |
+| Domain | `bacsycay.click` |
+| Dashboard | https://bacsycay.click/dashboard/ |
+| Cert-pin | `29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8` |
 
-Client đã trỏ sẵn tới server này, chỉ cần tải về và chạy. Muốn dùng server riêng thì sửa
-file cấu hình `proxvn.json` hoặc dùng flag `--server` (xem [Cấu hình](docs/02-configuration.md)).
+Client đã trỏ sẵn về server này, chỉ cần tải binary và chạy. Muốn dùng server riêng
+thì sửa file `proxvn.json` hoặc dùng flag `--server` (xem [Cấu hình](docs/02-configuration.md)).
 
 ---
 
-## 🚀 Cài Đặt & Chạy Nhanh
+## Cài đặt nhanh
 
-### 1. Tải về (Download)
-Tải binary mới nhất từ [Releases](https://github.com/hoangtuvungcao/proxvn_tunnel_full/releases) hoặc build từ source:
+### 1. Tải binary
+
+Tải trực tiếp từ trang chủ (qua server công cộng):
+
+| Nền tảng | Client | Server |
+| :--- | :--- | :--- |
+| Linux x86-64 | https://bacsycay.click/bin/client/proxvn-linux-amd64 | .../bin/server/proxvn-server-linux-amd64 |
+| Linux ARM64 | .../bin/client/proxvn-linux-arm64 | .../bin/server/proxvn-server-linux-arm64 |
+| Windows x86-64 | .../bin/client/proxvn-windows-amd64.exe | .../bin/server/proxvn-server-windows-amd64.exe |
+| macOS Intel | .../bin/client/proxvn-darwin-amd64 | .../bin/server/proxvn-server-darwin-amd64 |
+| macOS Apple Silicon | .../bin/client/proxvn-darwin-arm64 | .../bin/server/proxvn-server-darwin-arm64 |
+| Android ARM64 | .../bin/client/proxvn-android-arm64 | — |
+
+Hoặc build từ source (cần Go 1.21+):
 
 ```bash
-# Build (yêu cầu Go 1.21+)
 ./build-all.sh
 ```
 
-### 2. Chạy Client (Cơ bản)
+Trên Linux/macOS, nhớ cấp quyền chạy: `chmod +x proxvn-linux-amd64`.
 
-**Public Web Server port 3000:**
+### 2. Chạy Client
+
+Public web server đang chạy ở port 3000:
+
 ```bash
-./bin/client/proxvn-linux-amd64 --proto http 3000
-# Output: https://random-id.bacsycay.click
+./proxvn-linux-amd64 --proto http 3000
+# => https://<id>.bacsycay.click
 ```
 
-**Public SSH port 22:**
+Public SSH (port 22):
+
 ```bash
-./bin/client/proxvn-linux-amd64 --proto tcp 22
-# Output: 103.77.246.196:10000
+./proxvn-linux-amd64 --proto tcp 22
+# => 103.77.246.196:<port>
 ```
 
-**Public Game Server (UDP) — vd Minecraft Bedrock:**
+Public game server UDP (ví dụ Minecraft Bedrock 19132):
+
 ```bash
-./bin/client/proxvn-linux-amd64 --proto udp 19132
-# Output: 103.77.246.196:10000 (UDP)
+./proxvn-linux-amd64 --proto udp 19132
+# => 103.77.246.196:<port> (UDP)
 ```
 
 ### 3. Cấu hình bằng file (không cần sửa code)
 
-Sao chép [`bin/proxvn.json.example`](bin/proxvn.json.example) thành `proxvn.json` (đặt cạnh
-binary), chỉnh `server`/`proto`/`port`… rồi chạy. Thứ tự ưu tiên:
-**flag dòng lệnh > `proxvn.json` > mặc định**.
+Sao chép [`bin/proxvn.json.example`](bin/proxvn.json.example) thành `proxvn.json` (đặt
+cạnh binary), chỉnh `server`/`proto`/`port`/`cert_pin`… rồi chạy. Thứ tự ưu tiên:
+
+```
+flag dòng lệnh  >  proxvn.json  >  giá trị mặc định build-in
+```
 
 ---
 
-## 📖 Hướng Dẫn Sử Dụng Chi Tiết (Client)
+## Hướng dẫn Client
 
-Binary client: `proxvn-linux-amd64` (Linux), `proxvn-windows-amd64.exe` (Windows), `proxvn-darwin-amd64` (macOS Intel), `proxvn-darwin-arm64` (macOS M1/M2).
+### Cú pháp
 
-### Cú pháp chung
-```bash
+```
 proxvn [OPTIONS] [LOCAL_PORT]
 ```
 
-### Các Tùy Chọn (Flags)
+`LOCAL_PORT` có thể đặt ở cuối lệnh thay cho flag `--port`.
+
+### Các flag
 
 | Flag | Mặc định | Mô tả |
 | :--- | :--- | :--- |
 | `--proto` | `tcp` | Giao thức tunnel: `tcp`, `udp`, `http`. |
-| `--server` | `103.77.246.196:8882` | Địa chỉ server tunnel (IP:Port). Mặc định trỏ về server cộng đồng. |
-| `--host` | `localhost` | Địa chỉ local service (VD: 192.168.1.10). |
-| `--port` | `80` | Port local service (có thể điền trực tiếp cuối lệnh). |
-| `--id` | (random) | Custom Client ID (để nhận diện trong Dashboard). |
-| `--ui` | `true` | Bật/tắt giao diện TUI đẹp mắt (`true`/`false`). |
-| `--cert-pin` | (none) | SHA256 fingerprint của server certificate để verify (bảo mật cao). |
-| `--insecure` | `false` | Bỏ qua xác thực SSL server (dùng cho dev/test). |
+| `--server` | `103.77.246.196:8882` | Địa chỉ server tunnel (IP:Port). |
+| `--host` | `localhost` | Địa chỉ service local (vd `192.168.1.10`). |
+| `--port` | `80` | Port service local (điền trực tiếp cuối lệnh được). |
+| `--id` | (ngẫu nhiên) | Client ID tùy chọn, dùng để nhận diện trong Dashboard. |
+| `--ui` | `true` | Bật/tắt giao diện terminal (`true`/`false`). |
+| `--cert-pin` | (none) | SHA256 fingerprint của cert server để xác thực. |
+| `--insecure` | `false` | Bỏ qua xác thực TLS server (chỉ dùng cho dev/test). |
+| `--config` | (auto) | Đường dẫn file cấu hình client. |
 
-#### File Sharing Flags
+Flag cho chế độ chia sẻ file:
 
 | Flag | Mặc định | Mô tả |
 | :--- | :--- | :--- |
-| `--file` | - | Đường dẫn thư mục cần share (VD: `./share`, `C:\Docs`). |
+| `--file` | — | Thư mục cần chia sẻ (vd `./share`, `C:\Docs`). |
 | `--user` | `proxvn` | Username để xác thực WebDAV. |
-| `--pass` | - | Mật khẩu bảo vệ truy cập (bắt buộc với `--file`). |
-| `--permissions` | `rw` | Quyền hạn: `r` (chỉ đọc), `rw` (đọc-ghi), `rwx` (full quyền). |
+| `--pass` | — | Mật khẩu truy cập (bắt buộc khi dùng `--file`). |
+| `--permissions` | `rw` | Quyền: `r` (chỉ đọc), `rw` (đọc-ghi), `rwx` (đầy đủ). |
 
-### 🔐 Certificate Pinning (Bảo mật cao)
+### HTTP Tunneling (`--proto http`)
 
-Để đảm bảo client chỉ kết nối đến đúng server của bạn (tránh MITM attack), sử dụng Certificate Pinning:
-
-```bash
-# Kết nối với cert-pin verification
-proxvn --cert-pin 5e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e --proto http 3000
-```
-
-**Cert-pin cho server chính thức:**
-```
-e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e
-```
-
-**Lưu ý:** Fingerprint này phải khớp với certificate của server. Nếu không khớp, client sẽ từ chối kết nối.
-
----
-
-### Các Chế Độ Chạy (Modes)
-
-#### 1. HTTP Tunneling (`--proto http`)
-Dùng cho Web Application. Server sẽ cấp subdomain HTTPS.
+Dùng cho web app; server cấp subdomain HTTPS.
 
 ```bash
-# Public port 8080 local ra Internet
+# Public port 8080
 proxvn --proto http 8080
 
-# Public Service ở máy khác trong mạng LAN (VD: Camera IP)
+# Public service ở máy khác trong LAN (vd camera IP)
 proxvn --proto http --host 192.168.1.50 80
-
-# Với cert-pin security
-proxvn --proto http --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e 3000
 ```
 
-**Kết quả:**
+Kết quả:
+
 ```
-✅ HTTP Tunnel Active
-🌐 Public URL: https://abc123.bacsycay.click
-📍 Forwarding to: localhost:3000
+Public URL: https://abc123.bacsycay.click
+Forwarding: localhost:3000
 ```
 
-#### 2. TCP Tunneling (`--proto tcp`)
-Dùng cho SSH, RDP, MySQL, PostgreSQL, v.v.
+### TCP Tunneling (`--proto tcp`)
+
+Dùng cho SSH, RDP, MySQL, PostgreSQL...
 
 ```bash
-# Public SSH (mặc định port 22)
-proxvn 22
-
-# Public SSH với bảo mật cao
-proxvn --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e 22
-
-# Public Remote Desktop (Windows)
-proxvn 3389
-
-# Public MySQL Database
-proxvn 3306
-
-# Kết nối tới server riêng của bạn
-proxvn --server YOUR_VPS_IP:8882 22
+proxvn 22            # SSH (mặc định proto tcp)
+proxvn 3389          # Remote Desktop (Windows)
+proxvn 3306          # MySQL
+proxvn --server YOUR_VPS_IP:8882 22   # dùng server riêng
 ```
 
-**Kết quả:**
+Kết quả:
+
 ```
-Public Address: 103.77.246.196:10001
+Public Address: 103.77.246.196:<port>
 ```
 
-#### 3. UDP Tunneling (`--proto udp`)
-Dùng cho Game Server hoặc ứng dụng UDP.
+### UDP Tunneling (`--proto udp`)
+
+Dùng cho game server và ứng dụng UDP.
 
 ```bash
-# Minecraft Bedrock
-proxvn --proto udp 19132
-
-# Minecraft Java Edition
-proxvn --proto udp 25565
-
-# Palworld Server
-proxvn --proto udp 8211
-
-# CS:GO Server
-proxvn --proto udp 27015
-
-# Với cert-pin security
-proxvn --proto udp --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e 19132
-```
-
-#### 4. File Sharing Mode (`--file`)
-Biến máy tính thành Cloud Storage mini. Hỗ trợ Web Interface và WebDAV.
-
-```bash
-# Share thư mục hiện tại, quyền full (username mặc định: proxvn)
-proxvn --file . --pass 123456 --permissions rwx
-
-# Share với custom username
-proxvn --file /home/user/Movies --user media --pass secret --permissions r
-# Khi mount WebDAV: username=media, password=secret
-
-# Share folder Windows
-proxvn --file "C:\Projects" --pass abc123 --permissions rw
-
-# Share với bảo mật cao
-proxvn --file ~/Documents --pass mypassword --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e
-```
-
-**Tính năng File Share:**
-*   **Web UI**: Truy cập qua trình duyệt, xem/tải/upload file, **Sửa code trực tiếp (Editor)**.
-*   **WebDAV**: Mount thành ổ đĩa mạng trên Windows (Z:), macOS (Finder), Linux.
-
-**Mount WebDAV trên các hệ điều hành:**
-
-*Windows:*
-```cmd
-net use Z: https://abc123.bacsycay.click /user:proxvn yourpassword
-```
-
-*macOS:*
-```
-Finder → Go → Connect to Server
-Server: https://abc123.bacsycay.click
-Username: proxvn
-Password: yourpassword
-```
-
-*Linux:*
-```bash
-sudo apt install davfs2
-sudo mount -t davfs https://abc123.bacsycay.click /mnt/proxvn
-# Username: proxvn
-# Password: yourpassword
+proxvn --proto udp 19132   # Minecraft Bedrock
+proxvn --proto udp 25565   # Minecraft Java
+proxvn --proto udp 8211    # Palworld
+proxvn --proto udp 27015   # CS / Source engine
 ```
 
 ---
 
-## 🛠️ Hướng Dẫn Vận Hành Server
+## Certificate Pinning
 
-Binary server: `proxvn-server-linux-amd64`.
+Để client chỉ kết nối đến đúng server (chống MITM), dùng `--cert-pin` với fingerprint
+SHA256 của certificate server:
 
-### Cú pháp
 ```bash
-./bin/server/proxvn-server-linux-amd64 [OPTIONS]
+proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 --proto http 3000
 ```
 
-### Các Tùy Chọn (Server Flags)
+Cert-pin của server công cộng (cũng lưu trong [`cert-pin.txt`](cert-pin.txt)):
+
+```
+29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8
+```
+
+Lấy lại fingerprint từ một server bất kỳ:
+
+```bash
+echo | openssl s_client -connect <IP>:8882 2>/dev/null \
+  | openssl x509 -outform DER | sha256sum
+```
+
+Nếu fingerprint không khớp, client sẽ từ chối kết nối.
+
+---
+
+## Chia sẻ file (WebDAV)
+
+Biến máy tính thành kho lưu trữ mini với Web UI và WebDAV.
+
+```bash
+# Chia sẻ thư mục hiện tại, quyền đầy đủ (user mặc định: proxvn)
+proxvn --file . --pass 123456 --permissions rwx
+
+# Chia sẻ với username tùy chỉnh, chỉ đọc
+proxvn --file /home/user/Movies --user media --pass secret --permissions r
+
+# Chia sẻ thư mục Windows
+proxvn --file "C:\Projects" --pass abc123 --permissions rw
+```
+
+Mở URL `https://<id>.bacsycay.click` để xem/tải/upload file và sửa file trực tiếp trên
+trình duyệt, hoặc mount qua WebDAV:
+
+Windows:
+
+```cmd
+net use Z: https://<id>.bacsycay.click /user:proxvn yourpassword
+```
+
+macOS: Finder → Go → Connect to Server → `https://<id>.bacsycay.click`
+
+Linux:
+
+```bash
+sudo apt install davfs2
+sudo mount -t davfs https://<id>.bacsycay.click /mnt/proxvn
+```
+
+---
+
+## Vận hành Server
+
+Binary server: `proxvn-server-linux-amd64` (và các nền tảng khác).
+
+### Flag
 
 | Flag | Mặc định | Mô tả |
 | :--- | :--- | :--- |
-| `-port` | `8881` | Port cho Dashboard quản lý và API. |
+| `-port` | `8881` | Port Dashboard và API. Tunnel port = Dashboard port + 1 (vd 8882). |
 
-*Lưu ý: Tunnel Port sẽ luôn là `Dashboard Port + 1` (VD: 8882).*
+### Cấu hình bằng biến môi trường
 
-### Biến Môi Trường (Environment Variables)
-
-Thay vì dùng flag, bạn nên dùng file `.env` hoặc set biến môi trường. Copy file `.env.server.example` thành `.env` và tùy chỉnh:
+Server cấu hình hoàn toàn qua biến môi trường hoặc file `.env`. Chỉ cần đổi vài biến,
+phần còn lại đều có giá trị mặc định hợp lý.
 
 ```bash
 cp .env.server.example .env
 nano .env
 ```
 
-#### Các biến môi trường quan trọng:
+Các biến quan trọng nhất:
 
-**Server Settings:**
-```bash
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8882
-PUBLIC_PORT_START=10000
-PUBLIC_PORT_END=20000
-```
+| Biến | Mặc định | Mô tả |
+| :--- | :--- | :--- |
+| `SERVER_PORT` | `8882` | Port tunnel control (TCP-TLS) + UDP. Dashboard/API ở `8881`. |
+| `HTTP_PORT` | `443` | Port HTTPS phục vụ landing + dashboard + subdomain tunnel. |
+| `HTTP_DOMAIN` | (trống) | Domain cấp subdomain (vd `bacsycay.click`). Bắt buộc cho HTTP tunnel. |
+| `PUBLIC_HOST` | (auto) | IP công khai quảng bá cho client TCP/UDP. Trống = tự dò. |
+| `PUBLIC_PORT_START` / `_END` | `10000` / `20000` | Dải port công khai cho tunnel TCP/UDP. |
+| `DB_PATH` | `./proxvn.db` | File SQLite3 (Docker: `/data/proxvn.db`). |
+| `JWT_SECRET` | (random) | Khóa ký token. Nên đặt cố định để không bị logout khi restart. |
+| `ADMIN_USERNAME` | `admin` | Tài khoản admin khởi tạo (chỉ tạo khi DB rỗng). |
+| `ADMIN_PASSWORD` | `admin123` | Mật khẩu admin khởi tạo. Bắt buộc đổi trên production. |
 
-**HTTP Domain (cho HTTP Tunneling):**
-```bash
-# Cấu hình Domain cho HTTP Tunneling (Bắt buộc nếu muốn dùng tính năng này)
-HTTP_DOMAIN=yourdomain.com
-HTTP_PORT=443
-```
+Danh sách đầy đủ (rate limit, backup, monitoring, file server, cache...) xem trong
+[`.env.server.example`](.env.server.example).
 
-**Database:**
-```bash
-# SQLite3 Database
-DB_PATH=./proxvn.db
-```
-
-**Bảo mật:**
-```bash
-JWT_SECRET=your-super-secret-jwt-key-change-this
-TOKEN_EXPIRY=24h
-
-# Admin Account mặc định
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123
-```
-
-**TLS/SSL:**
-```bash
-TLS_MIN_VERSION=1.3
-AUTO_TLS=true
-TLS_CERT_FILE=./server.crt
-TLS_KEY_FILE=./server.key
-```
-
-**Performance:**
-```bash
-MAX_CONNECTIONS=10000
-BUFFER_SIZE=32768
-ENABLE_COMPRESSION=true
-COMPRESSION_LEVEL=6
-ENABLE_HTTP2=true
-```
-
-**Rate Limiting:**
-```bash
-RATE_LIMIT_RPS=10
-RATE_LIMIT_BURST=20
-ENABLE_DDOS_PROTECTION=true
-```
-
-**Resource Management:**
-```bash
-MAX_UPLOAD_SIZE=1000
-USER_STORAGE_QUOTA=10000
-BANDWIDTH_LIMIT=0
-```
-
-**Monitoring:**
-```bash
-MONITORING_ENABLED=true
-MONITORING_PORT=9090
-DEBUG_MODE=false
-LOG_LEVEL=info
-```
-
-**File Server & WebDAV:**
-```bash
-FILE_SERVER_ENABLED=true
-FILE_SERVER_PORT=8080
-WEBDAV_ENABLED=true
-WEBDAV_PATH=/webdav
-```
-
-**Cache:**
-```bash
-ENABLE_CACHE=true
-CACHE_SIZE_MB=256
-CACHE_TTL=3600s
-```
-
-Xem file `.env.server.example` để có danh sách đầy đủ các biến môi trường.
-
-### Triển Khai Server Riêng
-
-Để chạy server riêng hỗ trợ HTTPS Subdomain, bạn cần:
-
-1.  **Một tên miền** (VD: bacsycay.click) trỏ về IP VPS.
-2.  **Chứng chỉ SSL Wildcard** (`*.bacsycay.click`).
-3.  Đặt file `server.crt` và `server.key` (SSL của server tunnel) và wildcard cert (cho HTTP proxy) vào thư mục chạy.
-
-#### Cách 1: Dùng Cloudflare Origin Certificate (Khuyến nghị)
+### Chạy server
 
 ```bash
-# 1. Tạo Origin Certificate trên Cloudflare
-#    Cloudflare Dashboard → SSL/TLS → Origin Server → Create Certificate
-#    Lưu file: wildcard.crt và wildcard.key
-
-# 2. Đặt file vào thư mục server
-cp wildcard.crt /path/to/server/
-cp wildcard.key /path/to/server/
-
-# 3. Cấu hình DNS trên Cloudflare
-#    A     @    YOUR_VPS_IP    (Proxied: ON)
-#    CNAME *    yourdomain.com (Proxied: ON)
-
-# 4. SSL Mode: Full (strict)
-
-# 5. Chạy server
-export HTTP_DOMAIN="yourdomain.com"
 ./bin/server/proxvn-server-linux-amd64
 ```
 
-#### Cách 2: Dùng Let's Encrypt
+Dashboard: `http://YOUR_VPS_IP:8881/dashboard/` — đăng nhập bằng `admin` / `admin123`
+(đổi mật khẩu ngay sau lần đăng nhập đầu tiên).
+
+---
+
+## Triển khai Server riêng
+
+Để chạy server riêng có HTTPS subdomain, cần:
+
+1. Một tên miền (vd `example.com`) trỏ về IP VPS.
+2. Chứng chỉ wildcard cho `*.example.com` (HTTP proxy).
+3. Cặp `server.crt` / `server.key` cho tunnel control (server tự sinh self-signed nếu
+   bật `AUTO_TLS=true`; persist file này để cert-pin ổn định qua các lần redeploy).
+
+### Cách 1: Cloudflare Origin Certificate (khuyến nghị)
+
+```bash
+# 1. Cloudflare Dashboard -> SSL/TLS -> Origin Server -> Create Certificate
+#    Lưu thành wildcard.crt và wildcard.key, đặt cạnh binary server.
+# 2. DNS trên Cloudflare:
+#    A      @   YOUR_VPS_IP   (Proxied: ON)
+#    CNAME  *   example.com   (Proxied: ON)
+# 3. SSL/TLS mode: Full (strict)
+# 4. Chạy server:
+export HTTP_DOMAIN="example.com"
+./bin/server/proxvn-server-linux-amd64
+```
+
+### Cách 2: Let's Encrypt (DNS-01)
 
 ```bash
 sudo apt install python3-certbot-dns-cloudflare
 sudo certbot certonly --dns-cloudflare \
   --dns-cloudflare-credentials /root/.secrets/cloudflare.ini \
-  -d '*.yourdomain.com' -d 'yourdomain.com'
+  -d '*.example.com' -d 'example.com'
 
-# Copy cert
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem wildcard.crt
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem wildcard.key
+sudo cp /etc/letsencrypt/live/example.com/fullchain.pem wildcard.crt
+sudo cp /etc/letsencrypt/live/example.com/privkey.pem wildcard.key
 
-# Chạy server
-export HTTP_DOMAIN="yourdomain.com"
+export HTTP_DOMAIN="example.com"
 ./bin/server/proxvn-server-linux-amd64
 ```
 
-#### Mở Firewall:
+### Mở firewall
 
 ```bash
-# Linux (ufw)
-sudo ufw allow 8881/tcp  # Dashboard
-sudo ufw allow 8882/tcp  # Tunnel
-sudo ufw allow 443/tcp   # HTTPS (HTTP Tunneling)
-
-# Windows: Mở Windows Firewall → Inbound Rules → New Rule
+sudo ufw allow 22/tcp            # SSH
+sudo ufw allow 8881/tcp          # Dashboard / API
+sudo ufw allow 8882/tcp          # Tunnel control (TCP-TLS) + UDP
+sudo ufw allow 443/tcp           # HTTPS landing + subdomain tunnel
+sudo ufw allow 10000:20000/tcp   # Dải port công khai TCP
+sudo ufw allow 10000:20000/udp   # Dải port công khai UDP
 ```
 
-### Chạy Server
-
-**Chạy trực tiếp:**
-```bash
-./bin/server/proxvn-server-linux-amd64
-```
-
-**Hoặc dùng script helper:**
-```bash
-./bin/run-server.sh
-```
-
-**Dashboard Access:**
-```
-http://localhost:8881/dashboard/
-http://YOUR_VPS_IP:8881/dashboard/
-```
-
-**Default Admin Credentials:**
-```
-Username: admin
-Password: admin123
-```
-
-⚠️ **Lưu ý:** Đổi mật khẩu ngay sau lần đăng nhập đầu tiên!
+Chi tiết triển khai production xem [docs/05-deployment.md](docs/05-deployment.md).
 
 ---
 
-## 🔧 Build từ Source
+## Docker
 
-### Yêu cầu
-- Go 1.21 hoặc cao hơn
-- Git
-
-### Build All Platforms
+Cách triển khai khuyến nghị. `docker-compose.yml` chạy một container host-networked
+xử lý tất cả: dashboard (8881), tunnel (8882), HTTPS (443), và dải port 10000-20000.
 
 ```bash
-# Clone repository
-git clone https://github.com/hoangtuvungcao/proxvn_tunnel.git
-cd proxvn_tunnel
+cp .env.server.example .env
+nano .env                 # đặt HTTP_DOMAIN, PUBLIC_HOST, JWT_SECRET, ADMIN_PASSWORD
 
-# Build tất cả platforms (Linux, Windows, macOS, Android)
+docker compose up -d      # khởi động
+docker compose logs -f    # xem log
+docker compose down       # dừng
+```
+
+Đặt chứng chỉ vào thư mục `ssl/` trước khi chạy (xem docker-compose.yml để biết các
+file được mount: `ssl/wildcard.*`, `ssl/server.*`). Binary tải về được mount read-only
+từ `./bin`, nên có thể cập nhật binary mà không cần build lại image; còn `src/frontend`
+được COPY vào image nên khi đổi giao diện cần `docker compose build` lại.
+
+---
+
+## Build từ source
+
+Yêu cầu: Go 1.21+, Git.
+
+```bash
+git clone https://github.com/hoangtuvungcao/proxvn_tunnel_full.git
+cd proxvn_tunnel_full
 ./build-all.sh
 ```
 
-Script sẽ tạo ra các binary sau:
+`build-all.sh` cross-compile toàn bộ binary vào `bin/client/` và `bin/server/`:
 
-**Client binaries** (trong `bin/client/`):
-- `proxvn-windows-amd64.exe` - Windows 64-bit
-- `proxvn-linux-amd64` - Linux 64-bit
-- `proxvn-linux-arm64` - Linux ARM64
-- `proxvn-darwin-amd64` - macOS Intel
-- `proxvn-darwin-arm64` - macOS M1/M2
-- `proxvn-android-arm64` - Android ARM64
+Client (`bin/client/`):
 
-**Server binaries** (trong `bin/server/`):
-- `proxvn-server-windows-amd64.exe` - Windows Server
-- `proxvn-server-linux-amd64` - Linux Server
-- `proxvn-server-linux-arm64` - Linux ARM64 Server
-- `proxvn-server-darwin-amd64` - macOS Server Intel
-- `proxvn-server-darwin-arm64` - macOS Server M1/M2
+- `proxvn-linux-amd64`, `proxvn-linux-arm64`
+- `proxvn-windows-amd64.exe`
+- `proxvn-darwin-amd64`, `proxvn-darwin-arm64`
+- `proxvn-android-arm64`
 
-**Checksums:**
-- `bin/SHA256SUMS-client.txt`
-- `bin/SHA256SUMS-server.txt`
+Server (`bin/server/`):
 
-### Build Manual (cho một platform cụ thể)
+- `proxvn-server-linux-amd64`, `proxvn-server-linux-arm64`
+- `proxvn-server-windows-amd64.exe`
+- `proxvn-server-darwin-amd64`, `proxvn-server-darwin-arm64`
+
+Checksum: `bin/SHA256SUMS-client.txt`, `bin/SHA256SUMS-server.txt`.
+
+Build một nền tảng cụ thể:
 
 ```bash
 cd src/backend
-
-# Build client Linux
-GOOS=linux GOARCH=amd64 go build -o ../../bin/client/proxvn-linux-amd64 ./cmd/client
-
-# Build client Windows
+GOOS=linux   GOARCH=amd64 go build -o ../../bin/client/proxvn-linux-amd64       ./cmd/client
 GOOS=windows GOARCH=amd64 go build -o ../../bin/client/proxvn-windows-amd64.exe ./cmd/client
-
-# Build server Linux
-GOOS=linux GOARCH=amd64 go build -o ../../bin/server/proxvn-server-linux-amd64 ./cmd/server
+GOOS=linux   GOARCH=amd64 go build -o ../../bin/server/proxvn-server-linux-amd64 ./cmd/server
 ```
 
 ---
 
-## 📂 Cấu Trúc Dự Án
+## Cấu trúc dự án
 
 ```
-proxvn_tunnel/
-├── bin/                        # Binary executables
-│   ├── client/                 # Client binaries
-│   │   ├── proxvn-linux-amd64
-│   │   ├── proxvn-windows-amd64.exe
-│   │   ├── proxvn-darwin-amd64
-│   │   └── ...
-│   ├── server/                 # Server binaries
-│   │   ├── proxvn-server-linux-amd64
-│   │   └── ...
-│   ├── run-client.sh          # Client helper script (Linux/Mac)
-│   ├── run-client.bat         # Client helper script (Windows)
-│   ├── run-server.sh          # Server helper script (Linux/Mac)
-│   └── run-server.bat         # Server helper script (Windows)
+proxvn_tunnel_full/
+├── bin/                         # Binary đã build + script helper
+│   ├── client/                  # 6 binary client (linux/windows/darwin/android)
+│   ├── server/                  # 5 binary server
+│   ├── proxvn.json.example      # Mẫu cấu hình client
+│   ├── run-client.sh / .bat     # Script chạy client
+│   ├── run-server.sh / .bat     # Script chạy server
+│   └── SHA256SUMS-*.txt         # Checksum
 ├── src/
-│   ├── backend/               # Go source code
+│   ├── backend/                 # Mã nguồn Go
 │   │   ├── cmd/
-│   │   │   ├── client/        # Client main.go
-│   │   │   ├── server/        # Server main.go
-│   │   │   └── fileserver/    # File server module
-│   │   └── internal/          # Internal packages
-│   │       ├── api/           # REST API handlers
-│   │       ├── auth/          # Authentication service
-│   │       ├── config/        # Configuration management
-│   │       ├── database/      # Database layer (SQLite3)
-│   │       ├── http/          # HTTP proxy server
-│   │       ├── middleware/    # HTTP middlewares
-│   │       ├── models/        # Data models
-│   │       └── tunnel/        # Tunnel protocol
-│   └── frontend/              # Web Dashboard & Landing Page
-│       ├── dashboard/         # Admin Dashboard
-│       └── landing/           # Landing Page
-├── docs/                      # Documentation
-│   ├── 01-getting-started.md
-│   ├── 02-configuration.md
-│   ├── 03-client-guide.md
-│   ├── 04-admin-guide.md
-│   ├── 05-deployment.md
-│   ├── 06-operations.md
-│   ├── 07-troubleshooting.md
-│   └── 08-security.md
-├── scripts/                   # Build & deployment scripts
-├── wiki/                      # Additional documentation
-├── .env.server.example        # Server configuration template
-├── cert-pin.txt              # Certificate pinning fingerprint
-├── build-all.sh              # Build script
-├── Dockerfile                # Docker configuration
-├── docker-compose.yml        # Docker Compose
-└── README.md                 # This file
+│   │   │   ├── client/          # main.go của client
+│   │   │   ├── server/          # main.go của server
+│   │   │   └── fileserver/      # Module file server / WebDAV
+│   │   └── internal/
+│   │       ├── api/             # REST API handlers
+│   │       ├── auth/            # Xác thực JWT
+│   │       ├── config/          # Quản lý cấu hình
+│   │       ├── database/        # Tầng SQLite3
+│   │       ├── http/            # HTTP proxy (landing + subdomain)
+│   │       ├── middleware/      # Middleware HTTP
+│   │       ├── models/          # Data models
+│   │       └── tunnel/          # Giao thức tunnel
+│   └── frontend/                # Web UI
+│       ├── home.html            # Landing page (phục vụ tại /)
+│       ├── dashboard.html       # Dashboard admin
+│       ├── login.html           # Trang đăng nhập
+│       ├── users.html           # Quản lý user
+│       ├── css/ js/             # Tài nguyên dùng chung
+│       ├── docs/                # Tài liệu HTML (phục vụ tại /docs/)
+│       └── mobile/              # Giao diện mobile
+├── docs/                        # Tài liệu Markdown (01-08 + PRODUCTION)
+├── scripts/                     # Script build / SSL / tuning
+├── .env.server.example          # Mẫu cấu hình server đầy đủ
+├── cert-pin.txt                 # Fingerprint cert server công cộng
+├── build-all.sh                 # Script build đa nền tảng
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
-## 📚 Tài Liệu Chi Tiết
+## Tài liệu
 
-Tài liệu đầy đủ có trong thư mục `docs/`:
+Tài liệu chi tiết trong thư mục [`docs/`](docs/):
 
-- [01 - Getting Started](docs/01-getting-started.md) - Hướng dẫn bắt đầu
-- [02 - Configuration](docs/02-configuration.md) - Cấu hình chi tiết
-- [03 - Client Guide](docs/03-client-guide.md) - Hướng dẫn client
-- [04 - Admin Guide](docs/04-admin-guide.md) - Hướng dẫn quản trị
-- [05 - Deployment](docs/05-deployment.md) - Triển khai production
-- [06 - Operations](docs/06-operations.md) - Vận hành hệ thống
-- [07 - Troubleshooting](docs/07-troubleshooting.md) - Xử lý sự cố
-- [08 - Security](docs/08-security.md) - Bảo mật
-
----
-
-## 🐳 Docker Deployment
-
-### Docker Compose (Recommended)
-
-```bash
-# Clone repository
-git clone https://github.com/hoangtuvungcao/proxvn_tunnel.git
-cd proxvn_tunnel
-
-# Copy và chỉnh sửa .env
-cp .env.server.example .env
-nano .env
-
-# Start server
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop server
-docker-compose down
-```
-
-### Docker Manual
-
-```bash
-# Build image
-docker build -t proxvn-server .
-
-# Run server
-docker run -d \
-  -p 8881:8881 \
-  -p 8882:8882 \
-  -p 443:443 \
-  -e HTTP_DOMAIN=yourdomain.com \
-  --name proxvn-server \
-  proxvn-server
-```
+- [01 - Getting Started](docs/01-getting-started.md) — bắt đầu nhanh
+- [02 - Configuration](docs/02-configuration.md) — cấu hình server & client
+- [03 - Client Guide](docs/03-client-guide.md) — chi tiết client
+- [04 - Admin Guide](docs/04-admin-guide.md) — quản trị Dashboard
+- [05 - Deployment](docs/05-deployment.md) — triển khai production
+- [06 - Operations](docs/06-operations.md) — vận hành, giám sát
+- [07 - Troubleshooting](docs/07-troubleshooting.md) — xử lý sự cố
+- [08 - Security](docs/08-security.md) — bảo mật
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### Client không kết nối được
+Client không kết nối được:
 
 ```bash
 # Kiểm tra kết nối tới server
-telnet 103.77.246.196 8882
+nc -vz 103.77.246.196 8882
 
-# Chạy với insecure mode để test
+# Test bỏ qua xác thực TLS (chỉ để chẩn đoán)
 proxvn --insecure --proto http 3000
-
-# Check logs
-proxvn --proto http 3000 2>&1 | tee client.log
 ```
 
-### Server không start
+Server không start (port đã bị chiếm):
 
 ```bash
-# Check port đã sử dụng chưa
-sudo netstat -tlnp | grep 8881
-sudo netstat -tlnp | grep 8882
-
-# Kill process đang dùng port
-sudo kill -9 PID
-
-# Check logs
-./bin/server/proxvn-server-linux-amd64 2>&1 | tee server.log
+sudo ss -tlnp | grep -E '8881|8882'
 ```
 
-### Certificate Pinning Error
-
-Nếu gặp lỗi cert-pin không khớp:
+Lỗi cert-pin không khớp — lấy lại fingerprint đúng:
 
 ```bash
-# Lấy cert fingerprint của server
-openssl s_client -connect 103.77.246.196:8882 < /dev/null 2>/dev/null | \
-  openssl x509 -fingerprint -sha256 -noout -in /dev/stdin
-
-# Hoặc chạy client không có cert-pin để xem fingerprint
-proxvn --proto http 3000
+echo | openssl s_client -connect 103.77.246.196:8882 2>/dev/null \
+  | openssl x509 -outform DER | sha256sum
 ```
 
-### File Sharing không mount được WebDAV
+WebDAV không mount được trên Windows:
 
-**Windows:**
 ```cmd
-# Enable WebClient service
 sc config WebClient start=auto
 net start WebClient
-
-# Mount với username/password
-net use Z: https://subdomain.bacsycay.click /user:proxvn yourpassword
+net use Z: https://<id>.bacsycay.click /user:proxvn yourpassword
 ```
 
-**Linux:**
-```bash
-# Install davfs2
-sudo apt install davfs2
-
-# Mount
-sudo mount -t davfs https://subdomain.bacsycay.click /mnt/proxvn
-```
+Thêm tình huống trong [docs/07-troubleshooting.md](docs/07-troubleshooting.md).
 
 ---
 
-## 🔐 Security Best Practices
+## Bản tham chiếu nhanh
 
-1. **Sử dụng Certificate Pinning:**
-   ```bash
-   proxvn --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e --proto http 3000
-   ```
-
-2. **Đặt mật khẩu mạnh cho File Sharing:**
-   ```bash
-   proxvn --file ~/Documents --pass "MyStr0ng!P@ssw0rd#2024"
-   ```
-
-3. **Đổi mật khẩu admin mặc định ngay:**
-   - Login vào Dashboard
-   - Settings → Change Password
-
-4. **Giới hạn quyền File Sharing:**
-   ```bash
-   # Chỉ đọc
-   proxvn --file ~/Public --pass secret --permissions r
-   
-   # Đọc-ghi
-   proxvn --file ~/Share --pass secret --permissions rw
-   ```
-
-5. **Enable Rate Limiting trên server:**
-   ```bash
-   # Trong .env
-   RATE_LIMIT_RPS=10
-   RATE_LIMIT_BURST=20
-   ENABLE_DDOS_PROTECTION=true
-   ```
-
-6. **Sử dụng TLS 1.3:**
-   ```bash
-   # Trong .env
-   TLS_MIN_VERSION=1.3
-   ```
-
----
-
-## 📊 Performance Tips
-
-1. **Tăng buffer size cho throughput cao:**
-   ```bash
-   # Trong .env
-   BUFFER_SIZE=65536  # 64KB
-   ```
-
-2. **Enable compression:**
-   ```bash
-   # Trong .env
-   ENABLE_COMPRESSION=true
-   COMPRESSION_LEVEL=6
-   ```
-
-3. **Tăng connection pool:**
-   ```bash
-   # Trong .env
-   MAX_CONNECTIONS=20000
-   ```
-
-4. **Enable HTTP/2:**
-   ```bash
-   # Trong .env
-   ENABLE_HTTP2=true
-   ```
-
-5. **Optimize timeout:**
-   ```bash
-   # Trong .env
-   READ_TIMEOUT=30s
-   WRITE_TIMEOUT=30s
-   IDLE_TIMEOUT=60s
-   ```
-
----
-
-## 🤝 Support & Community
-
-*   📧 **Email**: trong20843@gmail.com
-*   💬 **Telegram**: [t.me/ZzTLINHzZ](https://t.me/ZzTLINHzZ)
-*   🐛 **Báo lỗi**: [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
-*   🌐 **Website**: [https://bacsycay.click](https://bacsycay.click)
-*   📖 **Documentation**: [https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs](https://github.com/hoangtuvungcao/proxvn_tunnel_full/tree/main/docs)
-
----
-
-## 📝 License
-
-**FREE TO USE - NON-COMMERCIAL ONLY**
-
-ProxVN Tunnel được cung cấp miễn phí cho mục đích phi thương mại. Nếu bạn muốn sử dụng cho mục đích thương mại, vui lòng liên hệ qua email.
-
----
-
-## 🎯 Roadmap
-
-- [x] HTTP/HTTPS Tunneling với auto SSL
-- [x] TCP Tunneling
-- [x] UDP Tunneling
-- [x] File Sharing với WebDAV
-- [x] Web Dashboard
-- [x] In-Browser Code Editor
-- [x] Certificate Pinning
-- [x] Rate Limiting & DDoS Protection
-- [x] Docker Support
-- [ ] Mobile App (iOS/Android)
-- [ ] Load Balancing
-- [ ] Custom Domain Support
-- [ ] Bandwidth Analytics
-- [ ] API Webhooks
-- [ ] Multi-User Management
-
----
-
-## 🙏 Acknowledgments
-
-Cảm ơn tất cả những người đã đóng góp và hỗ trợ dự án ProxVN!
-
-**Made with ❤️ in Vietnam by TrongDev**
-
----
-
-## 📌 Quick Reference Card
-
-### Client Commands Cheatsheet
+Client:
 
 ```bash
-# HTTP Tunnel
-proxvn --proto http 3000
-proxvn --proto http --cert-pin 5d21...47c6 3000
-
-# TCP Tunnel
-proxvn 22
-proxvn --cert-pin 5d21...47c6 3389
-
-# UDP Tunnel  
-proxvn --proto udp 19132
-proxvn --proto udp --cert-pin 5d21...47c6 25565
-
-# File Sharing
-proxvn --file ~/Documents --pass secret
-proxvn --file . --pass 123 --permissions rwx --cert-pin 5d21...47c6
-
-# Custom Server
-proxvn --server YOUR_IP:8882 --proto http 3000
+proxvn --proto http 3000                         # HTTP tunnel
+proxvn 22                                         # TCP tunnel (SSH)
+proxvn --proto udp 19132                          # UDP tunnel
+proxvn --file ~/Documents --pass secret           # Chia sẻ file
+proxvn --server YOUR_IP:8882 --proto http 3000    # Dùng server riêng
+proxvn --cert-pin 29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8 --proto http 3000
 ```
 
-### Server Commands Cheatsheet
+Server:
 
 ```bash
-# Start Server (default port 8881)
-./bin/server/proxvn-server-linux-amd64
-
-# Custom Port
-./bin/server/proxvn-server-linux-amd64 -port 9000
-
-# With Environment Variables
-export HTTP_DOMAIN="yourdomain.com"
-export JWT_SECRET="your-secret"
-./bin/server/proxvn-server-linux-amd64
-
-# Using .env file
-cp .env.server.example .env
-# Edit .env
-./bin/server/proxvn-server-linux-amd64
+./bin/server/proxvn-server-linux-amd64            # chạy (Dashboard port 8881)
+./bin/server/proxvn-server-linux-amd64 -port 9000 # đổi port Dashboard
+cp .env.server.example .env && nano .env          # cấu hình bằng .env
 ```
 
-### Certificate Pinning
+Cert-pin server công cộng:
 
-**Official Server Cert-Pin:**
 ```
-e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e
+29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8
 ```
 
-**Usage:**
-```bash
-proxvn --cert-pin e6af1198473d3b0209876511aaf245405c3e847e56e2cd3e325079aacd1f465e [other-flags]
-```
+---
+
+## License
+
+FREE TO USE — NON-COMMERCIAL ONLY. ProxVN Tunnel miễn phí cho mục đích phi thương mại;
+liên hệ qua email nếu dùng cho mục đích thương mại.
+
+## Liên hệ
+
+- Email: trong20843@gmail.com
+- Telegram: https://t.me/ZzTLINHzZ
+- Issues: https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues
+- Website: https://bacsycay.click
 
 ## Acknowledgments
 
-Dự án này được phát triển dựa trên mã nguồn mở từ:
-* [tunnel](https://github.com/kami2k1/tunnel) của tác giả [kami2k1](https://github.com/kami2k1).
-* Copyright (c) 2026 kami2k1.
+Dự án phát triển dựa trên mã nguồn mở [tunnel](https://github.com/kami2k1/tunnel)
+của [kami2k1](https://github.com/kami2k1). Copyright (c) 2026 kami2k1.

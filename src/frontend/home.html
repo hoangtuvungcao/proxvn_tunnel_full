@@ -3,301 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProxVN Tunnel - Free Public Tunnel Server</title>
+    <title>ProxVN Tunnel — Free Public Tunnel Server</title>
+    <meta name="description" content="Đưa dịch vụ localhost ra Internet ngay lập tức. Hỗ trợ HTTP, TCP, UDP và chia sẻ file. Server công cộng miễn phí, không cần đăng ký.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #667eea;
+            --primary: #7c8cff;
             --primary-dark: #5a67d8;
             --accent: #10b981;
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --surface-light: #334155;
+            --cyan: #22d3ee;
+            --bg: #0b1120;
+            --surface: #131c31;
+            --surface-2: #1b2740;
+            --surface-light: #26344f;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
-            --border: rgba(148, 163, 184, 0.1);
+            --border: rgba(148, 163, 184, 0.12);
+            --border-hover: rgba(124, 140, 255, 0.5);
+            --glow: rgba(124, 140, 255, 0.35);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.65;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
+        a { color: inherit; }
+
+        /* Animated background */
         .bg-gradient {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.15), transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.15), transparent 50%);
-            z-index: -1;
+            z-index: -2;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(124, 140, 255, 0.18), transparent 45%),
+                radial-gradient(circle at 85% 25%, rgba(34, 211, 238, 0.12), transparent 45%),
+                radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.14), transparent 50%);
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(circle at 50% 0%, black, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at 50% 0%, black, transparent 80%);
+        }
+
+        .container { max-width: 1140px; margin: 0 auto; padding: 0 1.5rem; }
 
         /* Header */
         header {
-            padding: 1.5rem 0;
+            padding: 1.1rem 0;
             border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(14px);
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(11, 17, 32, 0.72);
         }
-        header .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        header .container { display: flex; justify-content: space-between; align-items: center; }
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.5rem;
-            font-weight: 700;
-            font-family: 'Space Grotesk', monospace;
-            color: var(--text);
+            display: flex; align-items: center; gap: 0.6rem;
+            font-size: 1.4rem; font-weight: 700;
+            font-family: 'Space Grotesk', monospace; color: var(--text);
         }
-        .logo i { color: var(--primary); }
-        nav {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
+        .logo .logo-mark {
+            width: 2.1rem; height: 2.1rem; border-radius: 0.6rem;
+            display: grid; place-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            color: #0b1120; box-shadow: 0 4px 16px var(--glow);
         }
-        nav a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
+        nav { display: flex; gap: 1.8rem; align-items: center; }
+        nav a.navlink {
+            color: var(--text-muted); text-decoration: none;
+            font-weight: 500; font-size: 0.95rem; transition: color 0.2s;
         }
-        nav a:hover { color: var(--text); }
+        nav a.navlink:hover { color: var(--text); }
+
         .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            padding: 0.7rem 1.3rem; border-radius: 0.6rem;
+            font-weight: 600; font-size: 0.95rem; text-decoration: none;
+            transition: all 0.2s; border: none; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 0.5rem;
         }
+        .btn i { width: 1.1em; height: 1.1em; }
         .btn-primary {
-            background: var(--primary);
-            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; box-shadow: 0 8px 24px -8px var(--glow);
         }
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px var(--glow); }
+        .btn-ghost {
+            background: var(--surface-2); color: var(--text);
+            border: 1px solid var(--border);
         }
+        .btn-ghost:hover { border-color: var(--border-hover); transform: translateY(-2px); }
 
         /* Hero */
-        .hero {
-            text-align: center;
-            padding: 6rem 0 4rem;
+        .hero { text-align: center; padding: 5.5rem 0 3rem; }
+        .badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.4rem 0.9rem; border-radius: 999px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent); font-size: 0.85rem; font-weight: 600;
+            margin-bottom: 1.6rem;
+        }
+        .dot {
+            width: 0.55rem; height: 0.55rem; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
         }
         .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800;
+            letter-spacing: -0.02em; line-height: 1.08; margin-bottom: 1.3rem;
+        }
+        .hero h1 .grad {
+            background: linear-gradient(120deg, var(--primary), var(--cyan) 60%, var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
         .hero p {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto 2rem;
+            font-size: 1.2rem; color: var(--text-muted);
+            max-width: 620px; margin: 0 auto 2.2rem;
         }
-        .hero-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
+        .hero-actions { display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; }
+
+        /* Stats strip */
+        .stats {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 1rem; margin: 3.5rem 0 1rem;
+        }
+        .stat {
+            text-align: center; padding: 1.4rem 1rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 0.9rem;
+        }
+        .stat .num {
+            font-family: 'Space Grotesk', monospace; font-size: 1.8rem;
+            font-weight: 700; color: var(--text);
+        }
+        .stat .lbl { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+        /* Sections */
+        .section { padding: 4rem 0; }
+        .section + .section { border-top: 1px solid var(--border); }
+        .section-header { text-align: center; margin-bottom: 2.6rem; }
+        .section-header h2 { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.01em; }
+        .section-header p { color: var(--text-muted); font-size: 1.05rem; margin-top: 0.6rem; }
+        .eyebrow {
+            text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.78rem;
+            font-weight: 700; color: var(--primary); margin-bottom: 0.6rem;
         }
 
-        /* Info Cards */
+        /* Info / feature cards */
         .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin: 4rem 0;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1.3rem;
         }
         .info-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 2rem;
-            transition: transform 0.2s, border-color 0.2s;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1.8rem;
+            transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
         }
         .info-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--primary);
+            transform: translateY(-5px); border-color: var(--border-hover);
+            box-shadow: 0 18px 40px -20px var(--glow);
         }
-        .info-card i {
-            width: 3rem;
-            height: 3rem;
-            border-radius: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
+        .info-card .ic {
+            width: 3rem; height: 3rem; border-radius: 0.8rem;
+            display: grid; place-items: center; margin-bottom: 1.1rem;
         }
-        .info-card.emerald i { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
-        .info-card.indigo i { background: rgba(102, 126, 234, 0.1); color: var(--primary); }
-        .info-card.cyan i { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
-        .info-card h3 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-        }
-        .info-card p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+        .info-card .ic i { width: 1.5rem; height: 1.5rem; }
+        .info-card.emerald .ic { background: rgba(16,185,129,0.12); color: var(--accent); }
+        .info-card.indigo .ic { background: rgba(124,140,255,0.12); color: var(--primary); }
+        .info-card.cyan .ic { background: rgba(34,211,238,0.12); color: var(--cyan); }
+        .info-card h3 { font-size: 1.2rem; margin-bottom: 0.45rem; }
+        .info-card p { color: var(--text-muted); font-size: 0.95rem; }
+        a.info-card { text-decoration: none; display: block; }
+        a.info-card .more {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            color: var(--primary); font-weight: 600; font-size: 0.9rem; margin-top: 0.9rem;
         }
 
-        /* Download Section */
-        .section {
-            padding: 4rem 0;
-            border-top: 1px solid var(--border);
-        }
-        .section-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        .section-header h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-        .section-header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
+        /* Download grid */
         .download-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;
         }
         .download-btn {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            text-align: center;
-            color: var(--text);
-            text-decoration: none;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.75rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 0.85rem; padding: 1.5rem 1rem; text-align: center;
+            text-decoration: none; color: var(--text);
+            transition: all 0.2s; display: flex; flex-direction: column;
+            align-items: center; gap: 0.6rem;
         }
-        .download-btn:hover {
-            border-color: var(--primary);
-            transform: translateY(-2px);
-            background: var(--surface-light);
+        .download-btn:hover { border-color: var(--border-hover); transform: translateY(-3px); background: var(--surface-2); }
+        .download-btn .pic {
+            width: 2.6rem; height: 2.6rem; border-radius: 0.7rem;
+            display: grid; place-items: center; background: var(--surface-2); color: var(--primary);
         }
-        .download-btn i {
-            font-size: 2rem;
-        }
-        .download-btn .platform {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-        .download-btn .arch {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
+        .download-btn .pic i { width: 1.4rem; height: 1.4rem; }
+        .download-btn .platform { font-weight: 600; font-size: 1.05rem; }
+        .download-btn .arch { font-size: 0.82rem; color: var(--text-muted); }
 
-        /* Server Info */
-        .server-info {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 2rem;
-            margin: 2rem 0;
+        /* Two-column layout for server info + quick start */
+        .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+        .panel {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1.8rem;
         }
+        .panel h3 {
+            font-size: 1.15rem; margin-bottom: 1.2rem;
+            display: flex; align-items: center; gap: 0.55rem;
+        }
+        .panel h3 i { width: 1.2rem; height: 1.2rem; color: var(--primary); }
         .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border);
         }
         .info-row:last-child { border-bottom: none; }
-        .info-label {
-            color: var(--text-muted);
-            font-weight: 500;
-        }
+        .info-label { color: var(--text-muted); font-weight: 500; font-size: 0.9rem; white-space: nowrap; }
+        .info-val-wrap { display: flex; gap: 0.6rem; align-items: center; min-width: 0; }
         .info-value {
-            font-family: 'Space Grotesk', monospace;
-            color: var(--accent);
-            font-weight: 600;
+            font-family: 'Space Grotesk', monospace; color: var(--accent);
+            font-weight: 600; font-size: 0.92rem;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .copy-btn {
-            background: var(--surface-light);
-            border: 1px solid var(--border);
-            padding: 0.4rem 0.8rem;
-            border-radius: 0.375rem;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.85rem;
+            flex-shrink: 0; background: var(--surface-light); border: 1px solid var(--border);
+            padding: 0.35rem 0.7rem; border-radius: 0.4rem; color: var(--text-muted);
+            cursor: pointer; transition: all 0.2s; font-size: 0.8rem; font-weight: 600;
         }
-        .copy-btn:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
+        .copy-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* Code Block */
+        /* Code blocks */
         .code-block {
-            background: #1a1f2e;
-            border: 1px solid var(--border);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            position: relative;
+            background: #0a0f1e; border: 1px solid var(--border);
+            border-radius: 0.7rem; padding: 1rem 1.1rem; margin: 0.8rem 0;
+            position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
         }
         .code-block code {
-            font-family: 'Space Grotesk', monospace;
-            color: var(--accent);
-            font-size: 0.95rem;
+            font-family: 'Space Grotesk', monospace; font-size: 0.9rem;
+            color: #cbd5e1; white-space: pre-wrap; word-break: break-word;
         }
+        .code-block .cm { color: var(--text-muted); }
+        .code-block .tk { color: var(--cyan); }
+        .code-copy {
+            flex-shrink: 0; background: transparent; border: none; cursor: pointer;
+            color: var(--text-muted); transition: color 0.2s; padding: 0.15rem;
+        }
+        .code-copy:hover { color: var(--primary); }
+        .code-copy i { width: 1.05rem; height: 1.05rem; }
 
         /* Footer */
         footer {
-            border-top: 1px solid var(--border);
-            padding: 2rem 0;
-            text-align: center;
-            color: var(--text-muted);
-            margin-top: 4rem;
+            border-top: 1px solid var(--border); padding: 2.5rem 0;
+            text-align: center; color: var(--text-muted); margin-top: 2rem;
         }
+        footer a { color: var(--primary); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        .footer-links { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 0.8rem; font-size: 0.95rem; }
 
+        /* Scroll reveal */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.in { opacity: 1; transform: none; }
+
+        @media (max-width: 860px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .split { grid-template-columns: 1fr; }
+        }
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .hero p { font-size: 1rem; }
-            nav { display: none; }
+            nav .navlink { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { opacity: 1; transform: none; transition: none; }
+            .dot { animation: none; }
+            html { scroll-behavior: auto; }
         }
     </style>
 </head>
 <body>
     <div class="bg-gradient"></div>
+    <div class="bg-grid"></div>
 
     <header>
         <div class="container">
             <div class="logo">
-                <i data-lucide="radio"></i>
+                <span class="logo-mark"><i data-lucide="waypoints"></i></span>
                 ProxVN
             </div>
             <nav>
-                <a href="#download">Download</a>
-                <a href="#docs">Docs</a>
-                <a href="/dashboard/">Dashboard</a>
+                <a class="navlink" href="#features">Tính năng</a>
+                <a class="navlink" href="#download">Tải về</a>
+                <a class="navlink" href="#docs">Tài liệu</a>
+                <a class="btn btn-ghost" href="/dashboard/">Dashboard</a>
             </nav>
         </div>
     </header>
@@ -305,78 +316,97 @@
     <main>
         <section class="hero">
             <div class="container">
-                <h1>Free Public Tunnel Server</h1>
-                <p>Expose local TCP/UDP/HTTP services to the internet instantly. No registration, no credit card.</p>
+                <span class="badge"><span class="dot"></span> Server công cộng đang hoạt động</span>
+                <h1>Đưa <span class="grad">localhost</span> ra Internet<br>chỉ trong vài giây</h1>
+                <p>Tunnel HTTP, TCP, UDP và chia sẻ file ra Internet ngay lập tức. Không cần đăng ký,
+                   không cần thẻ tín dụng — chỉ cần tải client và chạy.</p>
                 <div class="hero-actions">
-                    <a href="#download" class="btn btn-primary">
-                        <i data-lucide="download"></i>
-                        Download Client
-                    </a>
-                    <a href="#docs" class="btn btn-primary">
-                        <i data-lucide="book-open"></i>
-                        Read Docs
-                    </a>
+                    <a href="#download" class="btn btn-primary"><i data-lucide="download"></i> Tải Client</a>
+                    <a href="#docs" class="btn btn-ghost"><i data-lucide="book-open"></i> Đọc tài liệu</a>
+                </div>
+
+                <div class="stats reveal">
+                    <div class="stat"><div class="num">3</div><div class="lbl">Giao thức (HTTP/TCP/UDP)</div></div>
+                    <div class="stat"><div class="num">6</div><div class="lbl">Nền tảng hỗ trợ</div></div>
+                    <div class="stat"><div class="num">TLS 1.3</div><div class="lbl">Mã hóa end-to-end</div></div>
+                    <div class="stat"><div class="num">100%</div><div class="lbl">Miễn phí &amp; mã nguồn mở</div></div>
                 </div>
             </div>
         </section>
 
-        <section class="container">
-            <div class="info-grid">
-                <div class="info-card emerald">
-                    <i data-lucide="zap"></i>
-                    <h3>Zero Config</h3>
-                    <p>Chạy ngay không cần setup. Server free public đã sẵn sàng phục vụ.</p>
+        <section id="features" class="section">
+            <div class="container">
+                <div class="section-header reveal">
+                    <div class="eyebrow">Tính năng</div>
+                    <h2>Mọi thứ bạn cần để public dịch vụ</h2>
+                    <p>Một binary duy nhất, chạy ngay không cần cài đặt</p>
                 </div>
-                <div class="info-card indigo">
-                    <i data-lucide="shield-check"></i>
-                    <h3>Secure TLS</h3>
-                    <p>Certificate pinning bảo vệ tunnel control connection của bạn.</p>
-                </div>
-                <div class="info-card cyan">
-                    <i data-lucide="server"></i>
-                    <h3>Multi-Protocol</h3>
-                    <p>TCP, UDP, HTTP tunneling. SSH, RDP, Game Server, Web — tất cả đều OK.</p>
+                <div class="info-grid">
+                    <div class="info-card emerald reveal">
+                        <div class="ic"><i data-lucide="zap"></i></div>
+                        <h3>Zero Config</h3>
+                        <p>Client đã trỏ sẵn về server công cộng. Tải về, chạy một lệnh là có URL public ngay.</p>
+                    </div>
+                    <div class="info-card indigo reveal">
+                        <div class="ic"><i data-lucide="shield-check"></i></div>
+                        <h3>Bảo mật TLS</h3>
+                        <p>Mã hóa TLS 1.3 cho kết nối control và data. Certificate pinning chống tấn công MITM.</p>
+                    </div>
+                    <div class="info-card cyan reveal">
+                        <div class="ic"><i data-lucide="server"></i></div>
+                        <h3>Đa giao thức</h3>
+                        <p>TCP, UDP và HTTP. SSH, RDP, game server, web app, database — tất cả đều chạy được.</p>
+                    </div>
+                    <div class="info-card indigo reveal">
+                        <div class="ic"><i data-lucide="globe"></i></div>
+                        <h3>HTTPS Subdomain</h3>
+                        <p>Mỗi tunnel HTTP nhận một subdomain HTTPS riêng dạng <code>id.bacsycay.click</code>.</p>
+                    </div>
+                    <div class="info-card emerald reveal">
+                        <div class="ic"><i data-lucide="folder-open"></i></div>
+                        <h3>Chia sẻ file</h3>
+                        <p>Biến thư mục thành kho lưu trữ với Web UI và WebDAV, mount thành ổ đĩa mạng.</p>
+                    </div>
+                    <div class="info-card cyan reveal">
+                        <div class="ic"><i data-lucide="gauge"></i></div>
+                        <h3>Hiệu năng cao</h3>
+                        <p>Viết bằng Go, tối ưu RAM/CPU, xử lý nhiều kết nối đồng thời ổn định.</p>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="download" class="section">
             <div class="container">
-                <div class="section-header">
-                    <h2>Download Client</h2>
+                <div class="section-header reveal">
+                    <div class="eyebrow">Tải về</div>
+                    <h2>Tải Client</h2>
                     <p>Chọn binary phù hợp với hệ điều hành của bạn</p>
                 </div>
-
                 <div class="download-grid">
-                    <a href="/bin/client/proxvn-windows-amd64.exe" class="download-btn" download>
-                        <i data-lucide="monitor"></i>
-                        <span class="platform">Windows</span>
-                        <span class="arch">x64</span>
+                    <a href="/bin/client/proxvn-windows-amd64.exe" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="monitor"></i></span>
+                        <span class="platform">Windows</span><span class="arch">x64</span>
                     </a>
-                    <a href="/bin/client/proxvn-linux-amd64" class="download-btn" download>
-                        <i data-lucide="hard-drive"></i>
-                        <span class="platform">Linux</span>
-                        <span class="arch">x64</span>
+                    <a href="/bin/client/proxvn-linux-amd64" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="hard-drive"></i></span>
+                        <span class="platform">Linux</span><span class="arch">x64</span>
                     </a>
-                    <a href="/bin/client/proxvn-linux-arm64" class="download-btn" download>
-                        <i data-lucide="hard-drive"></i>
-                        <span class="platform">Linux</span>
-                        <span class="arch">ARM64</span>
+                    <a href="/bin/client/proxvn-linux-arm64" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="cpu"></i></span>
+                        <span class="platform">Linux</span><span class="arch">ARM64</span>
                     </a>
-                    <a href="/bin/client/proxvn-darwin-amd64" class="download-btn" download>
-                        <i data-lucide="laptop"></i>
-                        <span class="platform">macOS</span>
-                        <span class="arch">Intel</span>
+                    <a href="/bin/client/proxvn-darwin-amd64" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="laptop"></i></span>
+                        <span class="platform">macOS</span><span class="arch">Intel</span>
                     </a>
-                    <a href="/bin/client/proxvn-darwin-arm64" class="download-btn" download>
-                        <i data-lucide="laptop"></i>
-                        <span class="platform">macOS</span>
-                        <span class="arch">Apple Silicon</span>
+                    <a href="/bin/client/proxvn-darwin-arm64" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="laptop"></i></span>
+                        <span class="platform">macOS</span><span class="arch">Apple Silicon</span>
                     </a>
-                    <a href="/bin/client/proxvn-android-arm64" class="download-btn" download>
-                        <i data-lucide="smartphone"></i>
-                        <span class="platform">Android</span>
-                        <span class="arch">Termux ARM64</span>
+                    <a href="/bin/client/proxvn-android-arm64" class="download-btn reveal" download>
+                        <span class="pic"><i data-lucide="smartphone"></i></span>
+                        <span class="platform">Android</span><span class="arch">Termux ARM64</span>
                     </a>
                 </div>
             </div>
@@ -384,73 +414,85 @@
 
         <section class="section">
             <div class="container">
-                <div class="section-header">
-                    <h2>Server Information</h2>
-                    <p>Free public server đã sẵn sàng — copy & paste để dùng ngay</p>
+                <div class="section-header reveal">
+                    <div class="eyebrow">Bắt đầu nhanh</div>
+                    <h2>Copy &amp; paste để chạy ngay</h2>
+                    <p>Server công cộng đã sẵn sàng — không cần cấu hình gì thêm</p>
                 </div>
-
-                <div class="server-info">
-                    <div class="info-row">
-                        <span class="info-label">Server Address</span>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <span class="info-value" id="serverAddr">103.77.246.196:8882</span>
-                            <button class="copy-btn" onclick="copyToClipboard('103.77.246.196:8882', this)">Copy</button>
+                <div class="split">
+                    <div class="panel reveal">
+                        <h3><i data-lucide="info"></i> Thông tin server</h3>
+                        <div class="info-row">
+                            <span class="info-label">Server</span>
+                            <div class="info-val-wrap">
+                                <span class="info-value">103.77.246.196:8882</span>
+                                <button class="copy-btn" onclick="copyText('103.77.246.196:8882', this)">Copy</button>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Domain</span>
+                            <div class="info-val-wrap">
+                                <span class="info-value">bacsycay.click</span>
+                                <button class="copy-btn" onclick="copyText('bacsycay.click', this)">Copy</button>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Cert-Pin</span>
+                            <div class="info-val-wrap">
+                                <span class="info-value" title="29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8">29e1546a…cd99c6d8</span>
+                                <button class="copy-btn" onclick="copyText('29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8', this)">Copy</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">HTTP Domain</span>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <span class="info-value">bacsycay.click</span>
-                            <button class="copy-btn" onclick="copyToClipboard('bacsycay.click', this)">Copy</button>
+
+                    <div class="panel reveal">
+                        <h3><i data-lucide="terminal"></i> Lệnh mẫu</h3>
+                        <div class="code-block">
+                            <code><span class="cm"># HTTP tunnel (web app)</span><br>./proxvn <span class="tk">--proto</span> http 3000</code>
+                            <button class="code-copy" onclick="copyText('./proxvn --proto http 3000', this, true)" title="Copy"><i data-lucide="copy"></i></button>
+                        </div>
+                        <div class="code-block">
+                            <code><span class="cm"># TCP tunnel (SSH)</span><br>./proxvn 22</code>
+                            <button class="code-copy" onclick="copyText('./proxvn 22', this, true)" title="Copy"><i data-lucide="copy"></i></button>
+                        </div>
+                        <div class="code-block">
+                            <code><span class="cm"># UDP tunnel (Minecraft Bedrock)</span><br>./proxvn <span class="tk">--proto</span> udp 19132</code>
+                            <button class="code-copy" onclick="copyText('./proxvn --proto udp 19132', this, true)" title="Copy"><i data-lucide="copy"></i></button>
+                        </div>
+                        <div class="code-block">
+                            <code><span class="cm"># Chia sẻ file (WebDAV + Web UI)</span><br>./proxvn <span class="tk">--file</span> . <span class="tk">--pass</span> secret <span class="tk">--permissions</span> rwx</code>
+                            <button class="code-copy" onclick="copyText('./proxvn --file . --pass secret --permissions rwx', this, true)" title="Copy"><i data-lucide="copy"></i></button>
                         </div>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Certificate Pin (SHA256)</span>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <span class="info-value" style="font-size: 0.85rem;">29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8</span>
-                            <button class="copy-btn" onclick="copyToClipboard('29e1546abeb0e1d27adc57362422670b5347a0f19a847c5e9dda8fa7cd99c6d8', this)">Copy</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section-header" style="margin-top: 3rem;">
-                    <h3>Quick Start</h3>
-                </div>
-
-                <div class="code-block">
-                    <code># HTTP Tunnel (Web Server)<br>./proxvn --proto http 3000</code>
-                </div>
-                <div class="code-block">
-                    <code># TCP Tunnel (SSH)<br>./proxvn 22</code>
-                </div>
-                <div class="code-block">
-                    <code># UDP Tunnel (Minecraft Bedrock)<br>./proxvn --proto udp 19132</code>
                 </div>
             </div>
         </section>
 
         <section id="docs" class="section">
             <div class="container">
-                <div class="section-header">
-                    <h2>Documentation</h2>
-                    <p>Hướng dẫn đầy đủ về CLI client và cấu hình</p>
+                <div class="section-header reveal">
+                    <div class="eyebrow">Tài liệu</div>
+                    <h2>Tài liệu hướng dẫn</h2>
+                    <p>Mọi thứ về cài đặt, cấu hình và CLI client</p>
                 </div>
-
                 <div class="info-grid">
-                    <a href="/docs/getting-started.html" class="info-card emerald" style="text-decoration: none;">
-                        <i data-lucide="play-circle"></i>
+                    <a href="/docs/getting-started.html" class="info-card emerald reveal">
+                        <div class="ic"><i data-lucide="play-circle"></i></div>
                         <h3>Getting Started</h3>
-                        <p>Cài đặt và chạy tunnel đầu tiên trong 2 phút</p>
+                        <p>Cài đặt và chạy tunnel đầu tiên trong 2 phút.</p>
+                        <span class="more">Mở <i data-lucide="arrow-right"></i></span>
                     </a>
-                    <a href="/docs/configuration.html" class="info-card indigo" style="text-decoration: none;">
-                        <i data-lucide="settings"></i>
+                    <a href="/docs/configuration.html" class="info-card indigo reveal">
+                        <div class="ic"><i data-lucide="settings"></i></div>
                         <h3>Configuration</h3>
-                        <p>Config file, flags, environment variables</p>
+                        <p>File cấu hình, flags và biến môi trường.</p>
+                        <span class="more">Mở <i data-lucide="arrow-right"></i></span>
                     </a>
-                    <a href="/docs/cli-guide.html" class="info-card cyan" style="text-decoration: none;">
-                        <i data-lucide="terminal"></i>
+                    <a href="/docs/cli-guide.html" class="info-card cyan reveal">
+                        <div class="ic"><i data-lucide="terminal"></i></div>
                         <h3>CLI Reference</h3>
-                        <p>Tất cả lệnh và tham số của client</p>
+                        <p>Tất cả lệnh và tham số của client.</p>
+                        <span class="more">Mở <i data-lucide="arrow-right"></i></span>
                     </a>
                 </div>
             </div>
@@ -459,26 +501,50 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 ProxVN Tunnel • Free Public Server • <a href="https://github.com/vantrong291/proxvn_tunnel_full" style="color: var(--primary);">GitHub</a></p>
+            <div class="footer-links">
+                <a href="#features">Tính năng</a>
+                <a href="#download">Tải về</a>
+                <a href="#docs">Tài liệu</a>
+                <a href="/dashboard/">Dashboard</a>
+                <a href="https://github.com/hoangtuvungcao/proxvn_tunnel_full" target="_blank" rel="noopener">GitHub</a>
+            </div>
+            <p>ProxVN Tunnel — Server công cộng miễn phí cho mục đích phi thương mại.</p>
         </div>
     </footer>
 
     <script>
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
 
-        function copyToClipboard(text, btn) {
+        function copyText(text, btn, isIcon) {
             navigator.clipboard.writeText(text).then(() => {
-                const original = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.style.background = 'var(--accent)';
-                btn.style.color = 'white';
-                setTimeout(() => {
-                    btn.textContent = original;
-                    btn.style.background = '';
-                    btn.style.color = '';
-                }, 2000);
+                if (isIcon) {
+                    btn.innerHTML = '<i data-lucide="check"></i>';
+                    if (window.lucide) lucide.createIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = '<i data-lucide="copy"></i>';
+                        if (window.lucide) lucide.createIcons();
+                    }, 1600);
+                } else {
+                    const original = btn.textContent;
+                    btn.textContent = 'Đã copy';
+                    btn.style.background = 'var(--accent)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'var(--accent)';
+                    setTimeout(() => {
+                        btn.textContent = original;
+                        btn.style.background = '';
+                        btn.style.color = '';
+                        btn.style.borderColor = '';
+                    }, 1600);
+                }
             });
         }
+
+        // Scroll reveal
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
     </script>
 </body>
 </html>

@@ -1,21 +1,21 @@
-# Welcome to ProxVN Wiki 🚀
+# Welcome to ProxVN Wiki
 
 > **Version 4.0.0** - Complete HTTP Tunneling Solution
 
 ProxVN là công cụ tunnel mạnh mẽ, **100% miễn phí** và **không giới hạn**, giúp bạn đưa localhost lên Internet chỉ với một câu lệnh - giống như ngrok nhưng hoàn toàn free!
 
-## 🌟 Quick Links
+## Quick Links
 
-- 🏠 [**Home**](Home) - Bạn đang ở đây
-- 📥 [**Installation**](Installation) - Hướng dẫn cài đặt
-- 🌐 [**HTTP Tunneling**](HTTP-Tunneling) - Sử dụng HTTP mode với subdomain
-- 🔌 [**TCP & UDP Tunneling**](TCP-UDP-Tunneling) - Tunnel TCP/UDP truyền thống
-- 🖥️ [**Server Setup**](Server-Setup) - Self-host server riêng
-- 🔐 [**Domain Configuration**](Domain-Configuration) - Cấu hình SSL và DNS
-- 🛠️ [**Troubleshooting**](Troubleshooting) - Xử lý sự cố
-- ❓ [**FAQ**](FAQ) - Câu hỏi thường gặp
+- [**Home**](Home) - Bạn đang ở đây
+- [**Installation**](Installation) - Hướng dẫn cài đặt
+- [**HTTP Tunneling**](HTTP-Tunneling) - Sử dụng HTTP mode với subdomain
+- [**TCP & UDP Tunneling**](TCP-UDP-Tunneling) - Tunnel TCP/UDP truyền thống
+- [**Server Setup**](Server-Setup) - Self-host server riêng
+- [**Domain Configuration**](Domain-Configuration) - Cấu hình SSL và DNS
+- [**Troubleshooting**](Troubleshooting) - Xử lý sự cố
+- [**FAQ**](FAQ) - Câu hỏi thường gặp
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Tải về từ Website
 
@@ -36,65 +36,65 @@ chmod +x proxvn-linux-client
 
 **Kết quả:**
 ```
-✅ HTTP Tunnel Active
-🌐 Public URL: https://abc123.bacsycay.click
-📍 Local: localhost:3000
+ HTTP Tunnel Active
+ Public URL: https://abc123.bacsycay.click
+ Local: localhost:3000
 ```
 
-Đơn giản như vậy! 🎉
+Đơn giản như vậy!
 
-## 🌟 Key Features
+## Key Features
 
-### 🌐 HTTP Tunneling (MỚI v4.0!)
+### HTTP Tunneling (MỚI v4.0!)
 Nhận subdomain HTTPS đẹp ngay lập tức:
-- ✅ `https://abc123.domain.com` - URL dễ chia sẻ
-- ✅ SSL tự động - không cần Let's Encrypt
-- ✅ Zero config - chỉ 1 command
+- `https://abc123.domain.com` - URL dễ chia sẻ
+- SSL tự động - không cần Let's Encrypt
+- Zero config - chỉ 1 command
 
-### 🔌 TCP Tunneling
+### TCP Tunneling
 Public bất kỳ service TCP nào:
 - SSH (port 22)
 - RDP (port 3389)
 - Database (MySQL, PostgreSQL...)
 - Web server (HTTP/HTTPS)
 
-### 🎮 UDP Tunneling
+### UDP Tunneling
 Cho game server và real-time apps:
 - Minecraft PE (port 19132)
 - CS:GO, Palworld
 - Voice chat, video streaming
 
-### 🚫 NO LIMITS!
+### NO LIMITS!
 - ∞ **Không giới hạn băng thông**
 - ∞ **Không giới hạn thời gian** (24/7 nếu muốn)
 - ∞ **Không giới hạn số tunnel**
-- 💰 **100% Miễn phí** - không phí ẩn
+- **100% Miễn phí** - không phí ẩn
 
-### 🔒 Security
+### Security
 - TLS encryption cho tất cả kết nối
 - Auto-reconnect khi mất mạng
 - Secure by default
 
-### 💻 Cross-Platform
+### Cross-Platform
 - Windows (10/11)
 - Linux (Ubuntu, Debian, CentOS...)
 - macOS (Apple Silicon & Intel)
 - Android (Termux)
 
-## 📊 So Sánh Với Ngrok
+## So Sánh Với Ngrok
 
 | Tính Năng | ProxVN | Ngrok |
 |-----------|--------|-------|
-| HTTP Tunneling | ✅ Free | ✅ Free |
-| TCP Tunneling | ✅ Free | 💰 $8/tháng |
-| UDP Tunneling | ✅ Free | 💰 $20/tháng |
-| Custom Domain | ✅ Free (Self-hosted) | 💰 Paid |
-| Không giới hạn băng thông | ✅ | ❌ |
-| Không giới hạn thời gian | ✅ | ❌ (2h) |
-| Self-Hosted | ✅ | ❌ |
-| Open Source | ✅ | ❌ |
+| HTTP Tunneling |  Free |  Free |
+| TCP Tunneling |  Free |  $8/tháng |
+| UDP Tunneling |  Free |  $20/tháng |
+| Custom Domain |  Free (Self-hosted) |  Paid |
+| Không giới hạn băng thông | Có | Không |
+| Không giới hạn thời gian | Có | Không (2h) |
+| Self-Hosted | Có | Không |
+| Open Source | Có | Không |
 
-## 🎯 Use Cases
+## Use Cases
 
 ### Web Development
 Share localhost với client/team:
@@ -127,7 +127,7 @@ Expose local IoT dashboard:
 proxvn --proto http 8123  # Home Assistant
 ```
 
-## 📚 Documentation Structure
+## Documentation Structure
 
 ### Beginner
 1. [Installation](Installation) - Cài đặt trên Windows/Linux/macOS
@@ -142,14 +142,14 @@ proxvn --proto http 8123  # Home Assistant
 1. [Server Setup](Server-Setup) - Self-host server riêng
 2. [Domain Configuration](Domain-Configuration) - Cấu hình domain & SSL
 
-## 🤝 Community & Support
+## Community & Support
 
-- 💬 [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel/discussions)
-- 🐛 [Report Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
-- 📧 Email: trong20843@gmail.com
-- 🌐 Website: [bacsycay.click](https://bacsycay.click)
+- [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel_full/discussions)
+- [Report Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
+- Email: trong20843@gmail.com
+- Website: [bacsycay.click](https://bacsycay.click)
 
-## 📝 Contributing
+## Contributing
 
 ProxVN là open-source project! Chúng tôi welcome contributions:
 
@@ -158,14 +158,14 @@ ProxVN là open-source project! Chúng tôi welcome contributions:
 3. Commit changes
 4. Push và tạo Pull Request
 
-Chi tiết xem [CONTRIBUTING.md](https://github.com/hoangtuvungcao/proxvn_tunnel/blob/main/CONTRIBUTING.md)
+Chi tiết xem [CONTRIBUTING.md](https://github.com/hoangtuvungcao/proxvn_tunnel_full/blob/main/CONTRIBUTING.md)
 
-## ⚖️ License
+## License
 
 **FREE TO USE - NON-COMMERCIAL ONLY**
 
-✅ Download, sử dụng, modify cho cá nhân  
-❌ Không được bán hoặc kinh doanh  
+ Download, sử dụng, modify cho cá nhân
+ Không được bán hoặc kinh doanh
 
 Commercial license cần liên hệ tác giả.
 
@@ -173,4 +173,4 @@ Commercial license cần liên hệ tác giả.
 
 © 2026 **ProxVN** • Developed by **TrongDev**
 
-[🏠 Back to Top](#welcome-to-proxvn-wiki-)
+[ Back to Top](#welcome-to-proxvn-wiki-)

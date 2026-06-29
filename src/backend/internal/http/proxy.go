@@ -39,7 +39,6 @@ type HTTPProxyServer struct {
 	baseDomain     string                 // Configurable base domain
 	httpPort       int                    // Configurable HTTP port
 	frontendDir    string                 // Frontend root (home.html, docs/, css/, js/)
-	landingDir     string                 // Legacy landing page directory
 	binDir         string                 // Bin directory for downloads
 	dashboardProxy *httputil.ReverseProxy // Proxy to internal dashboard
 }
@@ -68,9 +67,6 @@ func NewHTTPProxyServer(certFile, keyFile, baseDomain string, httpPort int) *HTT
 		frontendDir = "frontend"
 	}
 
-	// Legacy landing page directory (kept for backward-compatible assets)
-	landingDir := filepath.Join(frontendDir, "landing")
-
 	// Determine bin directory
 	binDir := "bin"
 	if _, err := os.Stat("bin"); os.IsNotExist(err) {
@@ -84,7 +80,6 @@ func NewHTTPProxyServer(certFile, keyFile, baseDomain string, httpPort int) *HTT
 		baseDomain:  baseDomain,
 		httpPort:    httpPort,
 		frontendDir: frontendDir,
-		landingDir:  landingDir,
 		binDir:      binDir,
 	}
 }

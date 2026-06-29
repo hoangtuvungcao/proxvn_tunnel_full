@@ -1,43 +1,43 @@
-# FAQ - Frequently Asked Questions ❓
+# FAQ - Frequently Asked Questions 
 
 Câu hỏi thường gặp về ProxVN.
 
-## 🌐 General
+## General
 
 ### ProxVN là gì?
 ProxVN là công cụ tunneling **miễn phí 100%**, giúp bạn đưa localhost lên Internet. Giống như ngrok nhưng:
-- ✅ Hoàn toàn miễn phí
-- ✅ Không giới hạn băng thông
-- ✅ Không giới hạn thời gian
-- ✅ Open source
+- Hoàn toàn miễn phí
+- Không giới hạn băng thông
+- Không giới hạn thời gian
+- Open source
 
 ### ProxVN có miễn phí không?
 **Có!** ProxVN hoàn toàn miễn phí cho non-commercial use. Không có:
-- ❌ Phí ẩn
-- ❌ Premium tier
-- ❌ Giới hạn băng thông/thời gian
-- ❌ Ads
+- Phí ẩn
+- Premium tier
+- Giới hạn băng thông/thời gian
+- Ads
 
 ### ProxVN có an toàn không?
 **Có**, ProxVN:
-- ✅ Mã hóa TLS end-to-end
-- ✅ Open source - code public trên GitHub
-- ✅ Không lưu data của bạn
-- ⚠️ NHƯNG: Đừng tunnel sensitive data (production database, API keys...)
+- Mã hóa TLS end-to-end
+- Open source - code public trên GitHub
+- Không lưu data của bạn
+- NHƯNG: Đừng tunnel sensitive data (production database, API keys...)
 
 ### ProxVN vs Ngrok?
 | Tính năng | ProxVN | Ngrok |
 |-----------|--------|-------|
-| HTTP Tunneling | ✅ Free | ✅ Free |
-| TCP Tunneling | ✅ Free | 💰 $8/tháng |
-| UDP Tunneling | ✅ Free | 💰 $20/tháng |
-| Không giới hạn | ✅ | ❌ |
-| Self-hosted | ✅ | ❌ |
-| Open source | ✅ | ❌ |
+| HTTP Tunneling |  Free |  Free |
+| TCP Tunneling |  Free |  $8/tháng |
+| UDP Tunneling |  Free |  $20/tháng |
+| Không giới hạn | Có | Không |
+| Self-hosted | Có | Không |
+| Open source | Có | Không |
 
 ---
 
-## 🌐 HTTP Tunneling
+## HTTP Tunneling
 
 ### Làm sao để share website của tôi?
 ```bash
@@ -52,9 +52,9 @@ proxvn --proto http 3000
 
 ### Subdomain có thay đổi không?
 **Có**. Subdomain là **ephemeral** (tạm thời):
-- 🔄 **Reconnect** (mất mạng): Giữ subdomain cũ (5 phút)
-- 🆕 **Restart** (tắt app): Subdomain mới
-- ❌ **Server restart**: Tất cả subdomain bị reset
+- **Reconnect** (mất mạng): Giữ subdomain cũ (5 phút)
+- **Restart** (tắt app): Subdomain mới
+- **Server restart**: Tất cả subdomain bị reset
 
 ### Có thể tự chọn subdomain không?
 **Hiện tại chưa**. Subdomain được random để tránh conflict. Tính năng custom subdomain sẽ có trong version sau.
@@ -77,7 +77,7 @@ Chi tiết: [Server Setup Guide](Server-Setup)
 
 ---
 
-## 🔌 TCP/UDP Tunneling
+## TCP/UDP Tunneling
 
 ### Làm sao để public SSH server?
 ```bash
@@ -95,7 +95,7 @@ ssh user@103.77.246.196 -p 10000
 # Minecraft PE (UDP port 19132)
 proxvn --proto udp 19132
 ```
-✅ **An Toàn:** Từ phiên bản v4.0.0, ProxVN đã hỗ trợ **Mã hóa AES-GCM 256-bit** cho toàn bộ traffic UDP. Dữ liệu game/voice của bạn được bảo vệ an toàn khỏi việc nghe lén trên đường truyền Internet.
+ **An Toàn:** Từ phiên bản v4.0.0, ProxVN đã hỗ trợ **Mã hóa AES-GCM 256-bit** cho toàn bộ traffic UDP. Dữ liệu game/voice của bạn được bảo vệ an toàn khỏi việc nghe lén trên đường truyền Internet.
 
 Bạn bè connect vào: `103.77.246.196:10000`
 
@@ -104,17 +104,17 @@ Bạn bè connect vào: `103.77.246.196:10000`
 
 ---
 
-## 🛠️ Technical
+## Technical
 
 ### ProxVN hoạt động như thế nào?
 ```
-[Your App] ←→ [ProxVN Client] ←TLS→ [ProxVN Server] ←→ [Internet]
+[Your App]  [ProxVN Client] TLS [ProxVN Server]  [Internet]
            localhost           Encrypted Tunnel        Public
 ```
 
 1. Client kết nối tới Server qua TLS
 2. Server cấp public endpoint (port hoặc subdomain)
-3. Requests từ Internet → Server → Client → Your App
+3. Requests từ Internet  Server  Client  Your App
 4. Response ngược lại
 
 ### Port nào được sử dụng?
@@ -164,7 +164,7 @@ proxvn 22
 
 ---
 
-## 💻 Platform-Specific
+## Platform-Specific
 
 ### Windows Defender báo virus?
 **Đây là false positive** do:
@@ -180,7 +180,7 @@ proxvn 22
 sudo xattr -d com.apple.quarantine proxvn-mac-m1
 ```
 
-Hoặc: System Preferences → Security → Allow anyway
+Hoặc: System Preferences  Security  Allow anyway
 
 ### Linux: "Permission denied"?
 ```bash
@@ -198,7 +198,7 @@ file proxvn-android
 
 ---
 
-## 🔥 Troubleshooting
+## Troubleshooting
 
 ### "Connection refused" khi chạy client?
 **Check:**
@@ -242,7 +242,7 @@ netstat -an | findstr :3000  # Windows
 
 ---
 
-## 🖥️ Self-Hosting
+## Self-Hosting
 
 ### Tôi có thể host server riêng không?
 **Có!** ProxVN support self-hosting:
@@ -280,23 +280,23 @@ Chi tiết: [Server Setup Guide](Server-Setup)
 
 ---
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 ### ProxVN có lưu data của tôi không?
 **Không**. ProxVN:
-- ❌ Không log request content
-- ❌ Không lưu credentials
-- ✅ Chỉ log metadata (IP, port, timestamp) cho debug
+- Không log request content
+- Không lưu credentials
+- Chỉ log metadata (IP, port, timestamp) cho debug
 
 ### Có thể trust public server không?
 **For development: Có**
 **For production: Không**
 
 Best practice:
-- ✅ Development/testing: OK
-- ✅ Demo websites: OK
-- ❌ Production apps: KHÔNG
-- ❌ Sensitive data: KHÔNG
+- Development/testing: OK
+- Demo websites: OK
+- Production apps: KHÔNG
+- Sensitive data: KHÔNG
 
 ### Làm sao để secure tunnel?
 1. **Add authentication** vào app
@@ -307,7 +307,7 @@ Best practice:
 
 ---
 
-## 📱 Mobile & IoT
+## Mobile & IoT
 
 ### Có thể tunnel từ Android không?
 **Có!** Dùng Termux:
@@ -334,7 +334,7 @@ chmod +x proxvn-linux-client
 
 ---
 
-## 🚀 Performance
+## Performance
 
 ### Latency bao nhiêu?
 **Trung bình:** +20-50ms qua tunnel.
@@ -357,7 +357,7 @@ chmod +x proxvn-linux-client
 
 ---
 
-## 💰 Commercial Use
+## Commercial Use
 
 ### Có thể dùng cho business không?
 **Cần license thương mại**. ProxVN free là "NON-COMMERCIAL ONLY".
@@ -370,13 +370,13 @@ chmod +x proxvn-linux-client
 **Không** được phép resell hoặc rebrand.
 
 **Nhưng:**
-- ✅ Offer ProxVN setup service
-- ✅ Include in paid tutorials/courses
-- ✅ Use for client projects (non-commercial)
+- Offer ProxVN setup service
+- Include in paid tutorials/courses
+- Use for client projects (non-commercial)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 ### Làm sao để contribute?
 1. Fork [GitHub repo](https://github.com/hoangtuvungcao/proxvn_tunnel)
@@ -384,10 +384,10 @@ chmod +x proxvn-linux-client
 3. Code + test
 4. Submit Pull Request
 
-Chi tiết: [CONTRIBUTING.md](https://github.com/hoangtuvungcao/proxvn_tunnel/blob/main/CONTRIBUTING.md)
+Chi tiết: [CONTRIBUTING.md](https://github.com/hoangtuvungcao/proxvn_tunnel_full/blob/main/CONTRIBUTING.md)
 
 ### Tìm thấy bug, làm gì?
-[Report trên GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
+[Report trên GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
 
 Include:
 - OS & version
@@ -396,18 +396,18 @@ Include:
 - Error messages/logs
 
 ### Feature request?
-[GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel/discussions)
+[GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel_full/discussions)
 
 ---
 
-## 📞 Support
+## Support
 
 ### Câu hỏi chưa được trả lời?
-- 💬 [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel/discussions)
-- 🐛 [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel/issues)
-- 📧 Email: trong20843@gmail.com
-- 🌐 Website: [bacsycay.click](https://bacsycay.click)
+- [GitHub Discussions](https://github.com/hoangtuvungcao/proxvn_tunnel_full/discussions)
+- [GitHub Issues](https://github.com/hoangtuvungcao/proxvn_tunnel_full/issues)
+- Email: trong20843@gmail.com
+- Website: [bacsycay.click](https://bacsycay.click)
 
 ---
 
-[🏠 Back to Home](Home) | [📖 All Guides](Home#-documentation-structure)
+[ Back to Home](Home) | [ All Guides](Home#-documentation-structure)
