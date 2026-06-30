@@ -1,9 +1,14 @@
-# ProxVN Tunnel Platform
+
+# ProxVN Tunnel is a free ngrok alternative for exposing localhost to the Internet. It supports HTTP, HTTPS, TCP, UDP, WebDAV, includes a free public tunnel server, and can be self-hosted with no artificial session limits.
+
+
+
 
 ProxVN Tunnel là giải pháp tunneling viết bằng Go, cho phép đưa dịch vụ chạy trên
 máy local (localhost) ra Internet ngay lập tức — tương tự ngrok nhưng tự host được.
 Hỗ trợ HTTP/HTTPS, TCP, UDP và chia sẻ file (WebDAV), chạy đa nền tảng, một binary
 duy nhất không cần cài đặt.
+
 
 - Tunnel server công cộng miễn phí: `103.77.246.196:8882`
 - Domain: `bacsycay.click`
