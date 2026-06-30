@@ -36,6 +36,7 @@ jobs:
         with:
           go-version-input: '1.25.x'
           work-dir: 'src/backend'
+          repo-checkout: false
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
