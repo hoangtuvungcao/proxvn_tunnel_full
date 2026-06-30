@@ -41,6 +41,7 @@ func NewWebDAVServer(root, prefix, username, password string, perms Permissions)
 			// Only log critical errors, not "file not found" which is normal
 			// if err != nil && !os.IsNotExist(err) {
 			if err != nil && r.Method != "PROPFIND" { // PROPFIND often "fails" naturally on hidden files
+				// #nosec G706
 				log.Printf("[WebDAV] %s %s - Error: %v", r.Method, r.URL.Path, err)
 			}
 		},

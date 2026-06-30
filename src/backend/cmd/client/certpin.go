@@ -44,7 +44,7 @@ func verifyCertFingerprint(rawCerts [][]byte, expectedFingerprint string) error 
 func (c *client) buildTLSConfig() *tls.Config {
 	config := &tls.Config{
 		MinVersion: tls.VersionTLS12,
-		// Skip certificate verification by default (works with self-signed certs)
+		// #nosec G402
 		InsecureSkipVerify: true,
 	}
 

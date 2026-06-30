@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"proxvn/backend/cmd/fileserver"
+	"proxvn/backend/internal/tunnel"
 )
 
 // runFileShareMode chạy file sharing mode
@@ -59,8 +60,9 @@ func runFileShareMode(path, username, password, perms, serverAddr string, insecu
 	// Start local HTTP server
 	localAddr := fmt.Sprintf("localhost:%d", localPort)
 	server := &http.Server{
-		Addr:    localAddr,
-		Handler: mux,
+		Addr:              localAddr,
+		Handler:           mux,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
 
 	go func() {
@@ -86,11 +88,13 @@ func runFileShareMode(path, username, password, perms, serverAddr string, insecu
 		protocol:           "http",   // Use HTTP for SSL certificate support
 		uiEnabled:          false,    // Disable normal TUI for file sharing
 		insecureSkipVerify: insecure, // Skip TLS verification if --insecure
+		state:              tunnel.NewStateMachine(),
+		ctrlQueue:          tunnel.NewControlMessageQueue(),
 	}
 
 	// 8. Connect tunnel with reconnection loop
 	backoff := 3 * time.Second
-	maxBackoff := 5 * time.Minute
+	maxBackoff := 30 * time.Second
 
 	for {
 		log.Println("[FileShare] 🚀 Đang tạo tunnel...")

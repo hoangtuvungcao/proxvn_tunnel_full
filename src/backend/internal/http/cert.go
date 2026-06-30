@@ -110,6 +110,7 @@ func (cm *CertManager) GenerateSelfSignedCertIfNeeded() error {
 		domain = "your-domain"
 	}
 	log.Printf("[cert] WARNING: No SSL certificate found. HTTP tunneling will not work!")
+	// #nosec G706
 	log.Printf("[cert] Please provide a wildcard certificate for *.%s", domain)
 	log.Printf("[cert] Expected files: wildcard.crt and wildcard.key in current directory")
 

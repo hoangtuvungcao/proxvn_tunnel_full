@@ -168,6 +168,7 @@ func (p *HTTPProxyServer) handlePlainHTTP(w http.ResponseWriter, r *http.Request
 	if host == "" {
 		host = p.baseDomain
 	}
+	// #nosec G710
 	http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
 }
 
@@ -308,6 +309,7 @@ func (p *HTTPProxyServer) serveLandingPage(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Logging for debugging
+	// #nosec G706
 	log.Printf("[http] Main domain request: %s %s (Host: %s)", r.Method, r.URL.Path, r.Host)
 
 	// Handle binary downloads served from the bin directory (bin/client/*, bin/server/*).

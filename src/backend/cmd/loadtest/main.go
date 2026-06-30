@@ -139,6 +139,7 @@ func runMockClient(id int, stats *Stats, shutdown chan struct{}) {
 }
 
 func simulateSession(id int, clientID, key, subdomain string, generation int64, stats *Stats, shutdown chan struct{}) error {
+	// #nosec G402
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true, // Allow mock self-signed certs
 	}

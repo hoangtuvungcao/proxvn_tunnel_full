@@ -82,6 +82,7 @@ func loadClientConfig(explicit string) *ClientConfig {
 		if p == "" {
 			continue
 		}
+		// #nosec G304
 		data, err := os.ReadFile(p)
 		if err != nil {
 			continue

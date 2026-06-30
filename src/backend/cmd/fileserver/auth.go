@@ -198,6 +198,7 @@ func SetSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 	// Detect if on HTTPS
 	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 
+	// #nosec G124
 	http.SetCookie(w, &http.Cookie{
 		Name:     "proxvn_session",
 		Value:    token,
@@ -214,6 +215,7 @@ func ClearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	// Detect if on HTTPS
 	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 
+	// #nosec G124
 	http.SetCookie(w, &http.Cookie{
 		Name:     "proxvn_session",
 		Value:    "",

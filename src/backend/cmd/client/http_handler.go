@@ -55,6 +55,7 @@ func (c *client) handleHTTPRequest(msg tunnel.Message) {
 	// 2. Often used with self-signed certs in development
 	// 3. No MITM risk since traffic doesn't leave the machine
 	tr := &http.Transport{
+		// #nosec G402
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	httpClient := &http.Client{

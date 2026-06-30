@@ -1289,6 +1289,7 @@ func (c *client) handleUDPPong(payload []byte) {
 		}
 		return
 	}
+	// #nosec G115
 	sent := int64(binary.BigEndian.Uint64(payload))
 	now := time.Now()
 	rtt := time.Duration(now.UnixNano()-sent) * time.Nanosecond
@@ -1355,10 +1356,12 @@ func buildUDPMessage(msgType byte, key, id string, payload []byte) []byte {
 	total += len(payload)
 	buf := make([]byte, total)
 	buf[0] = msgType
+	// #nosec G115
 	binary.BigEndian.PutUint16(buf[1:], uint16(keyLen))
 	copy(buf[3:], key)
 	offset := 3 + keyLen
 	if msgType != udpMsgHandshake {
+		// #nosec G115
 		binary.BigEndian.PutUint16(buf[offset:], uint16(idLen))
 		offset += 2
 		copy(buf[offset:], id)

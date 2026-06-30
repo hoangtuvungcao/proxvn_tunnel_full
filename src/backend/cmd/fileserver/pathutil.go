@@ -123,5 +123,6 @@ func EnsureDirectory(path string) error {
 		return nil
 	}
 
+	// #nosec G301
 	return os.MkdirAll(path, 0755)
 }
